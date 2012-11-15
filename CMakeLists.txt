@@ -16,8 +16,8 @@ option(WITHOUT_GLOG "Don't use google logging even it is in the system" OFF)
 include("${PROJECT_SOURCE_DIR}/cmake/ext/nx_utils.cmake")
 nx_configure()
 
-set(CURSORD2_VERSION_MAJOR 2)
-set(CURSORD2_VERSION_MINOR 1)
+set(CURSORD_VERSION_MAJOR 2)
+set(CURSORD_VERSION_MINOR 1)
 # configuration header
 configure_file(
 	"${PROJECT_SOURCE_DIR}/cursord.cfg"
@@ -34,26 +34,26 @@ find_package(Event)
 if(NOT Event_FOUND)
 	message(FATAL_ERROR "Can't find libevent")
 endif(NOT Event_FOUND)
-include_directories(Event_INCLUDE_DIR)
+include_directories(${Event_INCLUDE_DIR})
 
 ###########################################################################
 # tclap
 
 find_package(TCLAP)
-if(NOT Event_FOUND)
+if(NOT TCLAP_FOUND)
 	message(FATAL_ERROR "Can't find tclap")
-endif(NOT Event_FOUND)
-include_directories(TCLAP_INCLUDE_DIR)
+endif(NOT TCLAP_FOUND)
+include_directories(${TCLAP_INCLUDE_DIR})
 
 ##########################################################################
 # glog
 
 if( NOT WITHOUT_GLOG )
 	find_package( Glog )
-	if( NOT GLOG_FOUND )
+	if(NOT GLOG_FOUND)
 		message(STATUS "Glog not found, WITHOUT_GLOG had been set.")
 		set(WITHOUT_GLOG ON)
-	endif()
+	endif(NOT GLOG_FOUND)
 endif()
 
 if( WITHOUT_GLOG )
@@ -65,6 +65,6 @@ endif()
 
 ##########################################################################
 
-set(SRC cursord.cpp)
+set(SRC ./src/cursord.cpp)
 add_executable(cursord ${SRC})
 target_link_libraries(cursord ${Event_LIBRARIES} ${GLOG_LIBRARIES})
