@@ -18,11 +18,15 @@ int main(int argc, char * argv[])
 		TCLAP::CmdLine cmd("Command description message", ' ', CURSORD_VERSION_STR.str());
 
 		TCLAP::ValueArg<std::string> arg_type(
-				"t", "type", "Cursor type", true, "generator", "string", cmd);
+				"t", "type", "Cursor type. Valid types are: generator, file, odbc",
+				true, "generator", "string", cmd);
+		TCLAP::ValueArg<std::string> arg_arg(
+				"a", "argument", "Cursor argument (depend on type)", 
+				                 false, "", "string", cmd);
 		TCLAP::ValueArg<std::string> arg_address(
-				"a", "address", "Server address", false, "127.0.0.1", "string", cmd);
+				"H", "host", "Server address", false, "127.0.0.1", "string", cmd);
 		TCLAP::ValueArg<unsigned short> arg_port(
-				"p", "port", "Server port", false, 9553, "unsigned short", cmd);
+				"P", "port", "Server port", false, 9553, "unsigned short", cmd);
 
 		cmd.parse( argc, argv );
 		std::cout << arg_address.getValue() << ":" << arg_port.getValue() << std::endl;
@@ -31,5 +35,8 @@ int main(int argc, char * argv[])
 	{
 		std::cerr << "Error: " << e.error() << " for arg " << e.argId() << std::endl;
 	}
+
+	
+
 	return 0;
 }
