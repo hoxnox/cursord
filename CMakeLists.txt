@@ -31,19 +31,14 @@ include_directories("${PROJECT_SOURCE_DIR}/src/facet")
 ###########################################################################
 # event
 
-find_package(Event)
-if(NOT Event_FOUND)
-	message(FATAL_ERROR "Can't find libevent")
-endif(NOT Event_FOUND)
+find_package(Event REQUIRED)
 include_directories(${Event_INCLUDE_DIR})
+list(APPEND LIBRARIES ${Event_LIBRARIES})
 
 ###########################################################################
 # tclap
 
-find_package(TCLAP)
-if(NOT TCLAP_FOUND)
-	message(FATAL_ERROR "Can't find tclap")
-endif(NOT TCLAP_FOUND)
+find_package(TCLAP REQUIRED)
 include_directories(${TCLAP_INCLUDE_DIR})
 
 ##########################################################################
@@ -65,10 +60,17 @@ else()
 endif()
 
 ##########################################################################
+# nx_socket
+
+set(NX_SOCK_SRC ./src/nx_socket.h ./src/nx_socket.c)
+add_library(nx_socket STATIC ${NX_SOCK_SRC})
+list(APPEND LIBRARIES nx_socket)
+
+##########################################################################
 
 set(SRC ./src/cursord.cpp
 	./src/string.hpp
 	./src/string.cpp)
 add_executable(cursord ${SRC})
-target_link_libraries(cursord ${Event_LIBRARIES} ${GLOG_LIBRARIES})
+target_link_libraries(cursord ${LIBRARIES})
 set_target_properties(cursord PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP" )
