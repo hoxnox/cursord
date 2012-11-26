@@ -26,6 +26,7 @@ configure_file(
 )
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/Modules")
 include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/src/facet")
 
 ###########################################################################
 # event
@@ -65,7 +66,9 @@ endif()
 
 ##########################################################################
 
-set(SRC ./src/cursord.cpp)
+set(SRC ./src/cursord.cpp
+	./src/string.hpp
+	./src/string.cpp)
 add_executable(cursord ${SRC})
 target_link_libraries(cursord ${Event_LIBRARIES} ${GLOG_LIBRARIES})
 set_target_properties(cursord PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP" )

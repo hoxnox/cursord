@@ -13,28 +13,35 @@
 #include <iostream>
 #include <string.hpp>
 
+using namespace nx;
 
-std::map<std::string, std::string> parse_args(const std::string args)
+std::map<String, String> parse_args(const String args)
 {
-	std::map<std::string, std::string> result;
+	std::map<String, String> result;
 	size_t pbegin = 0, pcurr = 0;
-	while( (pcurr = args.find_first_of(';', pbegin)) != std::string::npos)
+	while( (pcurr = args.find_first_of(';', pbegin)) != String::npos)
 	{
 		if(pcurr - pbegin > 1)
 		{
-			std::string arg = args.substr(pbegin, pcurr - pbegin);
+			String arg = args.substr(pbegin, pcurr - pbegin);
 			size_t peq = arg.find_first_of('=');
-			if( peq != std::string::npos && peq > 1 )
-				result[arg.substr(0, peq)] = arg.substr(peq + 1, arg.length());
+			if( peq != String::npos && peq > 1 )
+			{
+				result[arg.substr(0, peq).trim().toLower()] 
+					= arg.substr(peq + 1, arg.length()).trim().toLower();
+			}
 		}
 		pbegin = pcurr + 1;
 	}
 	if(args.length() - pbegin > 1)
 	{
-		std::string arg = args.substr(pbegin, args.length() - pbegin);
+		String arg = args.substr(pbegin, args.length() - pbegin);
 		size_t peq = arg.find_first_of('=');
-		if( peq != std::string::npos && peq > 1 )
-			result[arg.substr(0, peq)] = arg.substr(peq + 1, arg.length());
+		if( peq != String::npos && peq > 1 )
+		{
+			result[arg.substr(0, peq).trim().toLower()] 
+				= arg.substr(peq + 1, arg.length()).trim().toLower();
+		}
 	}
 	return result;
 	
@@ -61,7 +68,8 @@ int main(int argc, char * argv[])
 
 		cmd.parse( argc, argv );
 		std::cout << arg_address.getValue() << ":" << arg_port.getValue() << std::endl;
-		std::map<std::string, std::string> args = parse_args(arg_arg.getValue());
+		std::map<String, String> args = parse_args(
+				String::fromUTF8(arg_arg.getValue()));
 		std::cout << "args:" << std::endl;
 		for(auto i : args)
 			std::cout << "\t" << i.first << " = " << i.second << std::endl;
