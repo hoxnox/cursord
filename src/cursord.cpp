@@ -7,7 +7,38 @@
 #include <cursordconf.h>
 
 #include <sstream>
+#include <map>
+#include <string>
+#include <algorithm>
+#include <iostream>
+#include <string.hpp>
 
+
+std::map<std::string, std::string> parse_args(const std::string args)
+{
+	std::map<std::string, std::string> result;
+	size_t pbegin = 0, pcurr = 0;
+	while( (pcurr = args.find_first_of(';', pbegin)) != std::string::npos)
+	{
+		if(pcurr - pbegin > 1)
+		{
+			std::string arg = args.substr(pbegin, pcurr - pbegin);
+			size_t peq = arg.find_first_of('=');
+			if( peq != std::string::npos && peq > 1 )
+				result[arg.substr(0, peq)] = arg.substr(peq + 1, arg.length());
+		}
+		pbegin = pcurr + 1;
+	}
+	if(args.length() - pbegin > 1)
+	{
+		std::string arg = args.substr(pbegin, args.length() - pbegin);
+		size_t peq = arg.find_first_of('=');
+		if( peq != std::string::npos && peq > 1 )
+			result[arg.substr(0, peq)] = arg.substr(peq + 1, arg.length());
+	}
+	return result;
+	
+}
 
 int main(int argc, char * argv[])
 {
@@ -19,7 +50,7 @@ int main(int argc, char * argv[])
 
 		TCLAP::ValueArg<std::string> arg_type(
 				"t", "type", "Cursor type. Valid types are: generator, file, odbc",
-				true, "generator", "string", cmd);
+				                 true, "generator", "string", cmd);
 		TCLAP::ValueArg<std::string> arg_arg(
 				"a", "argument", "Cursor argument (depend on type)", 
 				                 false, "", "string", cmd);
@@ -30,13 +61,15 @@ int main(int argc, char * argv[])
 
 		cmd.parse( argc, argv );
 		std::cout << arg_address.getValue() << ":" << arg_port.getValue() << std::endl;
+		std::map<std::string, std::string> args = parse_args(arg_arg.getValue());
+		std::cout << "args:" << std::endl;
+		for(auto i : args)
+			std::cout << "\t" << i.first << " = " << i.second << std::endl;
 	}
 	catch(TCLAP::ArgException &e)
 	{
 		std::cerr << "Error: " << e.error() << " for arg " << e.argId() << std::endl;
 	}
-
-	
 
 	return 0;
 }
