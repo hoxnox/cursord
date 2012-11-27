@@ -149,9 +149,9 @@ int MakeSockaddr(struct sockaddr* src,
                  const size_t addrln,
                  const unsigned short port)
 {
-	char * tmp = (char*)malloc(addrln + 1);
+	char * tmp = (char*)malloc((addrln + 1)*sizeof(char));
+	memset(tmp, 0, addrln + 1);
 	memcpy(tmp, addr, addrln);
-	tmp[addrln+1] = '\0';
 	if(src == NULL || addr == NULL || addrln == 0)
 		return -1;
 	src->sa_family = GetFamily(addr, addrln);
