@@ -29,13 +29,6 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/src/facet")
 
 ###########################################################################
-# event
-
-find_package(Event REQUIRED)
-include_directories(${Event_INCLUDE_DIR})
-list(APPEND LIBRARIES ${Event_LIBRARIES})
-
-###########################################################################
 # tclap
 
 find_package(TCLAP REQUIRED)
