@@ -67,10 +67,30 @@ add_library(nx_socket STATIC ${NX_SOCK_SRC})
 list(APPEND LIBRARIES nx_socket)
 
 ##########################################################################
+# cursord
 
 set(SRC ./src/cursord.cpp
 	./src/string.hpp
-	./src/string.cpp)
+	./src/string.cpp
+	./src/cursor.hpp
+	./src/cursor.cpp
+	./src/cursor_generator.hpp
+	./src/cursor_generator.cpp
+	./src/cursor_file.hpp
+	./src/cursor_file.cpp
+	./src/cursor_odbc.hpp
+	./src/cursor_odbc.cpp)
 add_executable(cursord ${SRC})
 target_link_libraries(cursord ${LIBRARIES})
-set_target_properties(cursord PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP" )
+set_target_properties(cursord PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP")
+
+##########################################################################
+# client
+
+set(SRC ./src/cursor-cli.cpp
+	./src/string.hpp
+	./src/string.cpp)
+add_executable(cursor-cli ${SRC})
+target_link_libraries(cursor-cli ${LIBRARIES})
+set_target_properties(cursor-cli PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP")
+

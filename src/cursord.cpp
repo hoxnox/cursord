@@ -3,23 +3,33 @@
  * (C) $username$ */
 
 #include <tclap/CmdLine.h>
-#include <event.h>
-#include <cursordconf.h>
 
 #include <sstream>
 #include <map>
 #include <string>
 #include <algorithm>
 #include <iostream>
-#include <string.hpp>
 #include <memory>
+
+#include <cursordconf.h>
 #include <nx_socket.h>
+#include <string.hpp>
+#include <gettext.h>
+#include <cursor.hpp>
+#include <cursor_generator.hpp>
+#include <cursor_file.hpp>
+#include <cursor_odbc.hpp>
+
 
 using namespace nx;
+using namespace cursor;
 
-std::map<String, String> parse_args(const String args)
+typedef std::map<String, String> Args;
+typedef struct sockaddr_storage Sockaddr;
+
+Args parse_args(const String args)
 {
-	std::map<String, String> result;
+	Args result;
 	size_t pbegin = 0, pcurr = 0;
 	while( (pcurr = args.find_first_of(';', pbegin)) != String::npos)
 	{
@@ -48,10 +58,18 @@ std::map<String, String> parse_args(const String args)
 	return result;
 }
 
-void RunCursor(const std::string               type,
-               const std::map<String, String>& args, 
-               const sockaddr_storage*         addr)
+void RunCursor(const std::string type, const Args& args, const Sockaddr* addr)
 {
+	Cursor * curs;
+	if(type == "generator")
+		curs = new CursorGenerator(*addr, args);
+	else if(type == "file")
+		curs = new CursorFile(*addr, args);
+	else if(type == "odbc")
+		curs = new CursorODBC(*addr, args);
+	else
+		throw TCLAP::ArgException(_("Unknown cursor type"), "t");
+	curs->Run();
 	return;
 }
 
@@ -61,30 +79,31 @@ int main(int argc, char * argv[])
 	{
 		std::stringstream CURSORD_VERSION_STR;
 		CURSORD_VERSION_STR << CURSORD_VERSION_MAJOR << "." << CURSORD_VERSION_MINOR;
-		TCLAP::CmdLine cmd("Command description message", ' ', CURSORD_VERSION_STR.str());
+		TCLAP::CmdLine cmd(_("no description yet"), ' ', CURSORD_VERSION_STR.str());
 
 		TCLAP::ValueArg<std::string> arg_type(
-				"t", "type", "Cursor type. Valid types are: generator, file, odbc",
+				"t", "type", _("Cursor type. Valid types are: generator, file, odbc"),
 				                 true, "generator", "string", cmd);
 		TCLAP::ValueArg<std::string> arg_arg(
-				"a", "argument", "Cursor argument (depend on type)", 
-				                 false, "", "string", cmd);
+				"a", "argument", _("Cursor arguments (depend on type)."
+					"Each argument has the following format: <name>=<value>."
+					"Arguments splitted by ';'."), 
+					false, "", "string", cmd);
 		TCLAP::ValueArg<std::string> arg_address(
-				"H", "host", "Server address", false, "127.0.0.1", "string", cmd);
+				"H", "host", _("Server address"), false, "127.0.0.1", "string", cmd);
 		TCLAP::ValueArg<unsigned short> arg_port(
-				"P", "port", "Server port", false, 9553, "unsigned short", cmd);
+				"P", "port", _("Server port"), false, 9553, "unsigned short", cmd);
 
 		cmd.parse( argc, argv );
-		std::map<String, String> args = parse_args(
+		Args args = parse_args(
 				String::fromUTF8(arg_arg.getValue()));
 		std::string addr_str = arg_address.getValue();
-		sockaddr_storage addr;
-		memset(&addr, 0, sizeof(sockaddr_storage));
+		Sockaddr addr;
+		memset(&addr, 0, sizeof(Sockaddr));
 		if( MakeSockaddr((sockaddr*)&addr, addr_str.c_str(), addr_str.length(), 
 				htons(arg_port.getValue())) < 0 )
 		{
-			std::cout << "ERROR:" << std::endl
-				<< "      Invalid host, or port. Check -H, -P args." << std::endl;
+			throw TCLAP::ArgException(_("Invalid host, or port"), "H");
 		}
 		RunCursor(arg_type.getValue(), args, &addr);
 	}
@@ -95,3 +114,4 @@ int main(int argc, char * argv[])
 
 	return 0;
 }
+
