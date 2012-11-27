@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <iostream>
 #include <string.hpp>
+#include <memory>
 #include <nx_socket.h>
 
 using namespace nx;
@@ -74,12 +75,17 @@ int main(int argc, char * argv[])
 				"P", "port", "Server port", false, 9553, "unsigned short", cmd);
 
 		cmd.parse( argc, argv );
-		std::cout << arg_address.getValue() << ":" << arg_port.getValue() << std::endl;
 		std::map<String, String> args = parse_args(
 				String::fromUTF8(arg_arg.getValue()));
 		std::string addr_str = arg_address.getValue();
 		sockaddr_storage addr;
-		MakeSockaddr((sockaddr*)&addr, addr_str.c_str(), addr_str.length(), htons(arg_port.getValue()));
+		memset(&addr, 0, sizeof(sockaddr_storage));
+		if( MakeSockaddr((sockaddr*)&addr, addr_str.c_str(), addr_str.length(), 
+				htons(arg_port.getValue())) < 0 )
+		{
+			std::cout << "ERROR:" << std::endl
+				<< "      Invalid host, or port. Check -H, -P args." << std::endl;
+		}
 		RunCursor(arg_type.getValue(), args, &addr);
 	}
 	catch(TCLAP::ArgException &e)

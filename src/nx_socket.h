@@ -81,7 +81,7 @@ int            SetNonBlock(SOCKET sock);
 int            SetReusable(SOCKET sock);
 int            IPv4Type(const uint32_t ip);
 unsigned short GetPort(struct sockaddr* addr);
-const void*    GetAddr(struct sockaddr* addr);
+void*          GetAddr(struct sockaddr* addr);
 void           PrintSockInfo(SOCKET sock);
 void           CopyStorageToSockaddr(const struct sockaddr_storage * st, struct sockaddr* sa);
 void           CopySockaddrToStorage(const struct sockaddr * sa, struct sockaddr_storage* st);
@@ -93,7 +93,7 @@ int            ResolveSockaddr(struct sockaddr* src,
                                const char * host,
                                const size_t hostln,
                                const unsigned short port);
-sa_family_t    GetFamily(const char* addr, const size_t addrln);
+int            GetFamily(const char* addr, const size_t addrln);
 
 #ifdef __cplusplus
 }

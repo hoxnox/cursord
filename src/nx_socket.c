@@ -55,15 +55,16 @@ int IPv4Type(const uint32_t ip)
 	return 1; // May be regular host
 }
 
-const void* GetAddr(struct sockaddr* addr)
+void* GetAddr(struct sockaddr* addr)
 {
+	if(addr == NULL)
+		return NULL;
 	if(addr->sa_family == AF_INET)
 		return &((struct sockaddr_in *)addr)->sin_addr;
-	if(addr->sa_family == AF_INET)
+	if(addr->sa_family == AF_INET6)
 		return &((struct sockaddr_in6*)addr)->sin6_addr;
-	return 0;
+	return NULL;
 }
-
 
 void PrintSockInfo(SOCKET sock)
 {
@@ -121,6 +122,7 @@ void CopyStorageToSockaddr(const struct sockaddr_storage * st, struct sockaddr* 
 		((struct sockaddr_in6*)sa)->sin6_port = ((const struct sockaddr_in6*)st)->sin6_port;
 	}
 }
+
 void CopySockaddrToStorage(const struct sockaddr * sa, struct sockaddr_storage* st)
 {
 	st->ss_family = sa->sa_family;
@@ -147,6 +149,15 @@ int MakeSockaddr(struct sockaddr* src,
                  const size_t addrln,
                  const unsigned short port)
 {
+	char * tmp = (char*)malloc(addrln + 1);
+	memcpy(tmp, addr, addrln);
+	tmp[addrln+1] = '\0';
+	if(src == NULL || addr == NULL || addrln == 0)
+		return -1;
+	src->sa_family = GetFamily(addr, addrln);
+	if( inet_pton(src->sa_family, tmp, GetAddr(src)) != 1 )
+		return -2;
+	((struct sockaddr_in6*)src)->sin6_port = port;
 	return 0;
 }
 
@@ -161,14 +172,25 @@ int ResolveSockaddr(struct sockaddr* src,
                     const size_t hostln,
                     const unsigned short port)
 {
+	// user getaddrinfo
 	return 0;
 }
 
 /**@brief get address family by string representation
- * @param addr
- * @param addrln*/
-sa_family_t GetFamilyy(const char* addr, const size_t addrln)
+ * @param addr - address
+ * @param addrln - the address length
+ * @return AF_INET, if addr may be IPv4, AF_INET6 if IPv6 and -1 on error
+ *
+ * TODO: For now, this function just search for ':' sign, if it is here, we
+ * expect IPv6 address, otherwise - IPv4.*/
+int GetFamily(const char* addr, const size_t addrln)
 {
+	if(addr == NULL || addrln == 0)
+		return 0;
+	int i;
+	for(i = 0; i < addrln; ++i)
+		if(addr[i] == ':')
+			return AF_INET6;
 	return AF_INET;
 }
 
