@@ -13,6 +13,7 @@
 #include <gettext.h>
 #include <string.hpp>
 #include <nx_socket.h>
+#include "speedometer.hpp"
 
 namespace cursor {
 
@@ -39,6 +40,7 @@ class Cursor
 		int                     state_;
 		char*                   recvbuf_;
 		int                     recvbufsz_;
+		Speedometer             speedometer_;
 };
 
 } // namespace

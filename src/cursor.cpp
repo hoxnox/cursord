@@ -5,6 +5,11 @@
 #include "cursor.hpp"
 #include <nx_socket.h>
 
+#include <sstream>
+#include <ctime>
+#include <iomanip>
+#include <limits>
+
 namespace cursor
 {
 
@@ -131,21 +136,24 @@ void Cursor::Run()
 				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
 			state_ = STATE_STOP | STATE_ERROR;
 		}
+
+
 		nx::String request = nx::String::fromUTF8(recvbuf_).trim().toLower();
+		nx::String reply;
 		if(request == "speed")
 		{
-			// TODO: speed
-			continue;
+			reply = nx::String::fromASCII(speedometer_.AVGSpeedS()) + L" "
+			      + nx::String::fromASCII(speedometer_.LastSpeedS());
 		}
 		else if(request == "stop")
 		{
 			LOG(INFO) << _("Received stop signal. Setting STATE_STOP.");
 			state_ = state_ | STATE_STOP;
 			continue;
-		}
+		}                                         	
 		else if(request == "get")
 		{
-			nx::String reply;
+			++speedometer_;
 			if(state_ == STATE_STOP)
 			{
 				LOG(INFO) << _("Received GET in STATE_STOP");
@@ -171,21 +179,20 @@ void Cursor::Run()
 					buf_.pop_front();
 				}
 			}
-			std::string reply_utf8 = reply.toUTF8();
-			rs_ = sendto(sock, reply_utf8.data(), reply.length(), 0, 
-					(sockaddr*)&raddr, raddrln);
-			if(rs_ < 0)
-			{
-				LOG(ERROR) << _("Error sending data.") << " "
-					<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
-				state_ = STATE_STOP | STATE_ERROR;
-			}
-			continue;
 		}
 		else
 		{
 			LOG(WARNING) << _("Unknown request: ") << request.toUTF8();
 			continue;
+		}
+		std::string reply_utf8 = reply.toUTF8();
+		rs_ = sendto(sock, reply_utf8.data(), reply.length(), 0, 
+				(sockaddr*)&raddr, raddrln);
+		if(rs_ < 0)
+		{
+			LOG(ERROR) << _("Error sending data.") << " "
+				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
+			state_ = STATE_STOP | STATE_ERROR;
 		}
 	}
 }
