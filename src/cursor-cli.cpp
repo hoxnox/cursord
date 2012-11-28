@@ -85,13 +85,17 @@ int main(int argc, char* argv[])
 
 		int rs = sendto(sock, com->second.data(), com->second.length(), 0,
 				(sockaddr*)&addr, addrln);
-		if( rs <= 0 )
+		if( rs < 0 )
 		{
 			std::cerr << _("Error sending command.") << " "
 				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR())
 				<< std::endl;
 			return 0;
 		}
+
+		if(com->first == "stop")
+			return 0;
+
 		struct timeval timeout;
 		timeout.tv_sec = 10;
 		timeout.tv_usec = 0;
@@ -124,7 +128,7 @@ int main(int argc, char* argv[])
 		char * recvbuf = (char*)malloc(recvbufsz);
 		memset(recvbuf, 0, recvbufsz);
 		rs = recvfrom(sock, recvbuf, recvbufsz - 1, 0, (sockaddr*)&addr, &addrln);
-		if(rs <= 0)
+		if(rs < 0)
 		{
 			std::cerr << _("Error receiving data.")  << " "
 				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());

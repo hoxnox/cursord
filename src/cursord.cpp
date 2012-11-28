@@ -40,7 +40,7 @@ Args parse_args(const String args)
 			if( peq != String::npos && peq > 1 )
 			{
 				result[arg.substr(0, peq).trim().toLower()] 
-					= arg.substr(peq + 1, arg.length()).trim().toLower();
+					= arg.substr(peq + 1, arg.length());
 			}
 		}
 		pbegin = pcurr + 1;
@@ -52,7 +52,7 @@ Args parse_args(const String args)
 		if( peq != String::npos && peq > 1 )
 		{
 			result[arg.substr(0, peq).trim().toLower()] 
-				= arg.substr(peq + 1, arg.length()).trim().toLower();
+				= arg.substr(peq + 1, arg.length());
 		}
 	}
 	return result;

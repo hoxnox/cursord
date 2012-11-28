@@ -5,6 +5,7 @@
 #ifndef __NX_CURSOR_FILE_HPP__
 #define __NX_CURSOR_FILE_HPP__
 
+#include <fstream>
 #include "cursor.hpp"
 
 namespace cursor {
@@ -15,7 +16,10 @@ class CursorFile : public Cursor
 		CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args);
 		~CursorFile();
 	protected:
-		virtual int Next(const size_t count, std::vector<nx::String>& buf);
+		virtual int Next(const size_t count, std::deque<nx::String>& buf);
+	private:
+		std::ifstream file_;
+		bool repeat_;
 };
 
 } // namespace

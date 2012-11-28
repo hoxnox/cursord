@@ -20,6 +20,7 @@ Cursor::Cursor(const Sockaddr addr)
 	: state_(0)
 	 ,recvbuf_(NULL)
 	 ,recvbufsz_(2000)
+	 ,bufsz_(1000)
 {
 	timeout_.tv_sec = 30;
 	timeout_.tv_usec = 0;
@@ -124,7 +125,7 @@ void Cursor::Run()
 		socklen_t raddrln = sizeof(raddr);
 		memset(recvbuf_, 0, recvbufsz_);
 		int rs_ = recvfrom(sock, recvbuf_, recvbufsz_ - 1, 0, (sockaddr*)&raddr, &raddrln);
-		if(rs_ <= 0)
+		if(rs_ < 0)
 		{
 			LOG(ERROR) << _("Error receiving data.") << " "
 				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
@@ -138,26 +139,42 @@ void Cursor::Run()
 		}
 		else if(request == "stop")
 		{
+			LOG(INFO) << _("Received stop signal. Setting STATE_STOP.");
 			state_ = state_ | STATE_STOP;
 			continue;
 		}
 		else if(request == "get")
 		{
-			nx::String reply = L"Hello!";
+			nx::String reply;
 			if(state_ == STATE_STOP)
 			{
 				LOG(INFO) << _("Received GET in STATE_STOP");
 				reply = L"END";
-				continue;
 			}
 			else
 			{
-				// TODO: get next
+				if(buf_.empty())
+				{
+					Next(bufsz_, buf_);
+					if(buf_.empty())
+					{
+						LOG(INFO) << _("Cursor is empty. Stopping.");
+						state_ = state_ | STATE_STOP;
+						reply = L"END";
+					}
+					else
+						LOG(INFO) << "Renew buffer. Last element: " << buf_.back().toUTF8();
+				}
+				if(!(state_ & STATE_STOP))
+				{
+					reply = buf_.front();
+					buf_.pop_front();
+				}
 			}
 			std::string reply_utf8 = reply.toUTF8();
 			rs_ = sendto(sock, reply_utf8.data(), reply.length(), 0, 
 					(sockaddr*)&raddr, raddrln);
-			if(rs_ <= 0)
+			if(rs_ < 0)
 			{
 				LOG(ERROR) << _("Error sending data.") << " "
 					<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());

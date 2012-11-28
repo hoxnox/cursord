@@ -6,7 +6,7 @@
 #define __NX_CURSOR_HPP__
 
 #include <string>
-#include <vector>
+#include <deque>
 #include <map>
 
 #include <logging.h>
@@ -25,14 +25,15 @@ class Cursor
 		virtual ~Cursor();
 		void Run();
 	protected:
-		virtual int Next(const size_t count, std::vector<nx::String>& buf) = 0;
+		virtual int Next(const size_t count, std::deque<nx::String>& buf) = 0;
 	private:
 		enum
 		{
 			STATE_STOP  = 1,
 			STATE_ERROR = 1 << 1
 		};
-		std::vector<nx::String> buf_;
+		std::deque<nx::String>  buf_;
+		size_t                  bufsz_;
 		Sockaddr                laddr_;
 		timeval                 timeout_;
 		int                     state_;

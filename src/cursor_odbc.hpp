@@ -15,7 +15,7 @@ class CursorODBC: public Cursor
 		CursorODBC(const Cursor::Sockaddr addr, const Cursor::Args args);
 		~CursorODBC();
 	protected:
-		virtual int Next(const size_t count, std::vector<nx::String>& buf);
+		virtual int Next(const size_t count, std::deque<nx::String>& buf);
 };
 
 } // namespace
