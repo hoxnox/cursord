@@ -58,15 +58,15 @@ Args parse_args(const String args)
 	return result;
 }
 
-void RunCursor(const std::string type, const Args& args, const Sockaddr* addr)
+void RunCursor(const std::string type, const Args& args, const Sockaddr& addr)
 {
 	Cursor * curs;
 	if(type == "generator")
-		curs = new CursorGenerator(*addr, args);
+		curs = new CursorGenerator(addr, args);
 	else if(type == "file")
-		curs = new CursorFile(*addr, args);
+		curs = new CursorFile(addr, args);
 	else if(type == "odbc")
-		curs = new CursorODBC(*addr, args);
+		curs = new CursorODBC(addr, args);
 	else
 		throw TCLAP::ArgException(_("Unknown cursor type"), "t");
 	curs->Run();
@@ -100,12 +100,12 @@ int main(int argc, char * argv[])
 		std::string addr_str = arg_address.getValue();
 		Sockaddr addr;
 		memset(&addr, 0, sizeof(Sockaddr));
-		if( MakeSockaddr((sockaddr*)&addr, addr_str.c_str(), addr_str.length(), 
+		if( MakeSockaddr((struct sockaddr*)&addr, addr_str.c_str(), addr_str.length(), 
 				htons(arg_port.getValue())) < 0 )
 		{
 			throw TCLAP::ArgException(_("Invalid host, or port"), "H");
 		}
-		RunCursor(arg_type.getValue(), args, &addr);
+		RunCursor(arg_type.getValue(), args, addr);
 	}
 	catch(TCLAP::ArgException &e)
 	{

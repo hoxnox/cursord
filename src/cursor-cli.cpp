@@ -38,7 +38,8 @@ int main(int argc, char* argv[])
 
 		std::string addr_str = arg_address.getValue();
 		Sockaddr addr;
-		memset(&addr, 0, sizeof(Sockaddr));
+		socklen_t addrln = sizeof(Sockaddr);
+		memset(&addr, 0, addrln);
 		if( MakeSockaddr((sockaddr*)&addr, addr_str.c_str(), addr_str.length(), 
 				htons(arg_port.getValue())) < 0 )
 		{
@@ -46,39 +47,92 @@ int main(int argc, char* argv[])
 		}
 
 
-		SOCKET sock = socket(addr.ss_family, SOCK_DGRAM, 0);
-		if(!IS_VALID_SOCK(sock))
-		{
-			LOG(ERROR) << _("Error socket initialization.") << " "
-				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
-			return -1;
-		}
-		if(SetNonBlock(sock) < 0)
-		{
-			LOG(ERROR) << _("Error switching socket to non-block mode.") << " "
-				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
-			close(sock);
-			return -1;
-		}
-		if(SetReusable(sock) < 0)
-		{
-			LOG(ERROR) << _("Error making socket reusable") << " "
-				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
-			close(sock);
-			return -1;
-		}
-
 		nx::String command = nx::String::fromUTF8(arg_command.getValue()).trim().toLower();
 		std::map<nx::String, std::string> commands;
 		commands[L"get"] = "GET";
 		commands[L"speed"] = "SPEED";
 		commands[L"stop"] = "STOP";
-		auto rs = commands.find(command);
-		if( rs == commands.end() )
+		auto com = commands.find(command);
+		if( com == commands.end() )
 			throw TCLAP::ArgException(_("Invalid command."), "c");
-		else
-			;
-			// TODO:
+
+
+		SOCKET sock = socket(addr.ss_family, SOCK_DGRAM, 0);
+		if(!IS_VALID_SOCK(sock))
+		{
+			std::cerr << _("Error socket initialization.") << " "
+				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR())
+				<< std::endl;
+			return 0;
+		}
+		if(SetNonBlock(sock) < 0)
+		{
+			std::cerr << _("Error switching socket to non-block mode.") << " "
+				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR())
+				<< std::endl;
+			close(sock);
+			return 0;
+		}
+		if(SetReusable(sock) < 0)
+		{
+			std::cerr << _("Error making socket reusable") << " "
+				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR())
+				<< std::endl;
+			close(sock);
+			return 0;
+		}
+
+
+		int rs = sendto(sock, com->second.data(), com->second.length(), 0,
+				(sockaddr*)&addr, addrln);
+		if( rs <= 0 )
+		{
+			std::cerr << _("Error sending command.") << " "
+				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR())
+				<< std::endl;
+			return 0;
+		}
+		struct timeval timeout;
+		timeout.tv_sec = 10;
+		timeout.tv_usec = 0;
+
+		fd_set rfds;
+		FD_ZERO(&rfds);
+		FD_SET(sock, &rfds);
+		rs = select(sock + 1, &rfds, NULL, NULL, &timeout);
+		if(rs < 0)
+		{
+			std::cerr << _("Error receiving data.") << " "
+				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR())
+				<< std::endl;
+			return 0;
+		}
+		if(rs == 0)
+		{
+			std::cerr << _("Server didn't answered for given timeout.") << std::endl;
+			return 0;
+		}
+		if(!FD_ISSET(sock, &rfds))
+		{
+			std::cerr << _("Select returned positive, but sock is not in rfds.")
+				<< std::endl;
+			return 0;
+		}
+
+
+		const int recvbufsz = 2000;
+		char * recvbuf = (char*)malloc(recvbufsz);
+		memset(recvbuf, 0, recvbufsz);
+		rs = recvfrom(sock, recvbuf, recvbufsz - 1, 0, (sockaddr*)&addr, &addrln);
+		if(rs <= 0)
+		{
+			std::cerr << _("Error receiving data.")  << " "
+				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
+			return 0;
+		}
+		std::cout << recvbuf << std::endl;
+		free(recvbuf);
+		return 0;
 	}
 	catch(TCLAP::ArgException &e)
 	{
@@ -86,3 +140,4 @@ int main(int argc, char* argv[])
 	}
 	return 0;
 }
+

@@ -60,9 +60,9 @@ void* GetAddr(struct sockaddr* addr)
 	if(addr == NULL)
 		return NULL;
 	if(addr->sa_family == AF_INET)
-		return &((struct sockaddr_in *)addr)->sin_addr;
+		return &(((struct sockaddr_in *)addr)->sin_addr);
 	if(addr->sa_family == AF_INET6)
-		return &((struct sockaddr_in6*)addr)->sin6_addr;
+		return &(((struct sockaddr_in6*)addr)->sin6_addr);
 	return NULL;
 }
 

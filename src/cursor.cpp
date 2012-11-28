@@ -16,9 +16,8 @@ namespace cursor
 
 /**@brief constructor
  * @param addr Address to bind server.*/
-Cursor::Cursor(Sockaddr addr)
-	: laddr_(addr)
-	 ,state_(0)
+Cursor::Cursor(const Sockaddr addr)
+	: state_(0)
 	 ,recvbuf_(NULL)
 	 ,recvbufsz_(2000)
 {
@@ -26,15 +25,19 @@ Cursor::Cursor(Sockaddr addr)
 	timeout_.tv_usec = 0;
 	recvbuf_ = (char *)malloc(recvbufsz_);
 	memset(recvbuf_, 0, recvbufsz_);
+	memset(&laddr_, 0, sizeof(Sockaddr));
+	memcpy(&laddr_, &addr, sizeof(Sockaddr));
 }
 
 Cursor::~Cursor()
 {
+	if(recvbuf_)
+		free(recvbuf_);
 }
 
-inline SOCKET init_socket(sockaddr* laddr)
+inline SOCKET init_socket(Cursor::Sockaddr& laddr)
 {
-	SOCKET sock = socket(laddr->sa_family, SOCK_DGRAM, 0);
+	SOCKET sock = socket(laddr.ss_family, SOCK_DGRAM, 0);
 	if(!IS_VALID_SOCK(sock))
 	{
 		LOG(ERROR) << _("Error socket initialization.") << " "
@@ -77,10 +80,13 @@ void Cursor::Run()
 			<< _("Message") << ": " << strerror(errno);
 		return;
 	}
-	SOCKET sock = init_socket((sockaddr*)&laddr_);
+	SOCKET sock = init_socket(laddr_);
 	if( !IS_VALID_SOCK(sock) )
 		return;
 	
+	LOG(INFO) << _("Starting cursor.") << " " << _("Address") << ": " << tmp << " "
+		<< _("port") << ": " << ntohs(GetPort((sockaddr*)&laddr_));
+
 	while( true )
 	{
 		int rs = 0;
@@ -93,7 +99,11 @@ void Cursor::Run()
 
 		rs = select(sock + 1, &rfds, NULL, NULL, &tm);
 		if(rs == 0)
+		{
+			if(state_ & STATE_STOP)
+				break;
 			continue;
+		}
 		if(rs < 0)
 		{
 			if( ( rs = GET_LAST_SOCK_ERROR() ) != EINTR ) // не просто прерывание
@@ -113,7 +123,7 @@ void Cursor::Run()
 		Sockaddr raddr;
 		socklen_t raddrln = sizeof(raddr);
 		memset(recvbuf_, 0, recvbufsz_);
-		int rs_ = recvfrom(sock, recvbuf_, recvbufsz_, 0, (sockaddr*)&raddr, &raddrln);
+		int rs_ = recvfrom(sock, recvbuf_, recvbufsz_ - 1, 0, (sockaddr*)&raddr, &raddrln);
 		if(rs_ <= 0)
 		{
 			LOG(ERROR) << _("Error receiving data.") << " "
@@ -161,9 +171,6 @@ void Cursor::Run()
 			continue;
 		}
 	}
-
-	LOG(INFO) << _("Starting cursor.") << " " << _("Address") << ": " << tmp << " "
-		<< _("port") << ": " << ntohs(GetPort((sockaddr*)&laddr_));
 }
 
 } //namespace
