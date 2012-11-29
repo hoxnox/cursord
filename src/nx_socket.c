@@ -37,22 +37,70 @@ int SetReusable(SOCKET sock)
 	return 1;
 }
 
-/**@brief get ipv4 type*/
+/**@brief get ipv4 type
+ * @param ip - uint32_t ip representation in network byte order*/
 int IPv4Type(const uint32_t ip)
 {
-	if( (ip & (uint32_t)0xff) == 0)
-		return 2;
-	if( ((ip & 0x80)== 0) && ((ip & (uint32_t)0xffffff80) == 0) )
-		return 3; //A
-	if( ((ip & 0xc0) == 0x80) && ((ip & (uint32_t)0xffff0040) == 0) )
-		return 4; //B
-	if( ((ip & 0xe0) == 0xc0) && ((ip & (uint32_t)0xff000020) == 0) )
-		return 5; //C
-	if( ((ip & 0xf0) == 0xe0) )
-		return 6; // Broadcast
-	if( ((ip & 0xf0) == 0xf0) )
-		return 7; // Reserved
-	return 1; // May be regular host
+	int result = 0;
+	if( (ip & (uint32_t)0xff) != 0)
+	{
+		if((ip & 0x80)== 0)
+		{
+			result |= IPv4TYPE_A;
+			if((ip & (uint32_t)0xffffff80) != 0)
+			{
+				if((ip & (uint32_t)0xffffff00) == 0xffffff00)
+				{
+					result |= IPv4TYPE_BROADCAST;
+				}
+				else
+				{
+					result |= IPv4TYPE_HOST;
+					if((ip & 0x8f) == 0x8f)
+						result |= IPv4TYPE_LOCAL;
+				}
+			}
+		}
+		else if((ip & 0xc0) == 0x80)
+		{
+			result |= IPv4TYPE_B;
+			if((ip & (uint32_t)0xffff0040) != 0)
+			{
+				if((ip & (uint32_t)0xfffff000) == 0xfffff000)
+				{
+					result |= IPv4TYPE_BROADCAST;
+				}
+				else
+				{
+					result |= IPv4TYPE_HOST;
+					if((ip & 0xfbf) == 0xfbf)
+						result |= IPv4TYPE_LOCAL;
+				}
+			}
+		}
+		else if((ip & 0xe0) == 0xc0) 
+		{
+			result |= IPv4TYPE_C;
+			if((ip & (uint32_t)0xff000020) != 0)
+			{
+				if((ip & (uint32_t)0xff000000) == 0xff000000)
+				{
+					result |= IPv4TYPE_BROADCAST;
+				}
+				else
+				{
+					result |= IPv4TYPE_HOST;
+					if((ip & 0xffffdf) == 0xffffdf)
+						result |= IPv4TYPE_LOCAL;
+				}
+			}
+		}
+		else if( ((ip & 0xf0) == 0xe0) )
+			result |= IPv4TYPE_BROADCAST;
+		else if( ((ip & 0xf0) == 0xf0) )
+			result |= IPv4TYPE_RESERVED;
+	}
+	return result;
 }
 
 void* GetAddr(struct sockaddr* addr)
