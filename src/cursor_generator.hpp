@@ -20,8 +20,10 @@ class CursorGenerator: public Cursor
 	protected:
 		virtual int Next(const size_t count, std::deque<nx::String>& buf);
 	private:
-		void (*generator)(char* state, size_t* statesz, size_t* statemaxsz,
-	                          char * next, size_t* nextsz, size_t* nextmaxsz);
+		void (*generator)(char* state, size_t* statesz, const size_t statemaxsz,
+		                  char * next, size_t* nextsz, const size_t nextmaxsz,
+		                  int repeat);
+		int        repeat_;
 		char*      nextbuf_;
 		size_t     nextbufsz_;
 		size_t     nextbufmaxsz_;

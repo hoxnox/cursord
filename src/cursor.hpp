@@ -27,6 +27,7 @@ class Cursor
 		void Run();
 	protected:
 		virtual int Next(const size_t count, std::deque<nx::String>& buf) = 0;
+		nx::String initial_;
 	private:
 		enum
 		{

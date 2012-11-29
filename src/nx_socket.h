@@ -83,7 +83,7 @@ enum {
 	IPv4TYPE_C         = 1 << 5, // 0010 0000
 	IPv4TYPE_RESERVED  = 1 << 4, // 0001 0000
 	IPv4TYPE_BROADCAST = 1 << 3, // 0000 1000
-	IPv4TYPE_LOCAL     = 1 << 2, // 0000 0100
+	IPv4TYPE_PRIVATE   = 1 << 2, // 0000 0100
 	IPv4TYPE_HOST      = 1 << 1, // 0000 0010
 	IPv4TYPE_UNKNOWN   = 0
 };

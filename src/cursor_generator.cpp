@@ -12,15 +12,46 @@ namespace cursor {
 ///////////////////////////////////////////////////////////////////////////
 // generators
 
-void simple_uint_generator(char* state, size_t* statesz, size_t* statemaxsz,
-                           char * next, size_t* nextsz, size_t* nextmaxsz)
+/**@var CursorGenerator::generator
+ * @brief Generator itself
+ *
+ * Generator is C/C++ function with the following signature:
+ *
+ * @code
+ *      void (*generator)(char* state, size_t* statesz, const size_t statemaxsz,
+ *                        char * next, size_t* nextsz, const size_t nextmaxsz, 
+ *                        const int repeat);
+ * @endcode
+ *
+ * state - is a store of data, used to generate next value.
+ *         Note that init argument of the cursor
+ *         application is written to the state, so on first call of this
+ *         function state can be not empty. Generator should write data for next
+ *         call.
+ * statesz - the size of the state parameter
+ * statemaxsz - buffer size of the state parameter. The generator MUST NOT write
+ *         over statemaxsz to the state.
+ * next - is the buffer, used to save generated value.
+ * nextsz - size of next parameter
+ * nextmaxsz - maximum buffer size of the next parameter. 
+ * repeat - Repeat flag is used, to indicate behaviour if the generator reaches
+ *         maximum value (if it has).
+ *
+ * If generator can't produce new value, it should set nextsz to 0.
+ *
+ * To write your own generator, see examples below.*/
+
+
+/**@brief produces <init>, <init>+1, ...*/
+void simple_uint_generator(char* state, size_t* statesz, const size_t statemaxsz,
+                           char * next, size_t* nextsz, const size_t nextmaxsz,
+                           const int repeat)
 {
 	unsigned int init = 0;
 	unsigned int nextv = 0;
-	bool repeat = false;
-	if(  state == NULL || statesz == NULL || statemaxsz == NULL
-	  || next  == NULL || nextsz  == NULL || nextmaxsz  == NULL
-	  || *nextsz > *nextmaxsz || *statesz > *statemaxsz
+	if(  state == NULL || statesz == NULL || statemaxsz == 0
+	  || next  == NULL || nextsz  == NULL || nextmaxsz  == 0
+	  || *nextsz > nextmaxsz || *statesz > statemaxsz
 	  )
 	{
 		LOG(ERROR) << _("simple_uint_generator: wrong args.");
@@ -29,17 +60,13 @@ void simple_uint_generator(char* state, size_t* statesz, size_t* statemaxsz,
 	}
 	if(*statesz == 0)
 		init = 0;
-	else if(state[0] == 'R')
+	else
 	{
-		repeat = true;
-		if(*statesz > 1)
-		{
-			char * init_c = (char*)malloc(*statesz);
-			memset(init_c, 0, *statesz);
-			memcpy(init_c, &state[1], *statesz - 1);
-			init = (unsigned)atoi(init_c);
-			free(init_c);
-		}
+		char * init_c = (char*)malloc(*statesz + 1);
+		memset(init_c, 0, *statesz + 1);
+		memcpy(init_c, state, *statesz);
+		init = (unsigned)atoi(init_c);
+		free(init_c);
 	}
 	if(init == std::numeric_limits<unsigned int>::max())
 	{
@@ -63,23 +90,58 @@ void simple_uint_generator(char* state, size_t* statesz, size_t* statemaxsz,
 	memset(tmp, 0, tmpsz);
 
 	sprintf(tmp, "%d", nextv);
-	if(strlen(tmp) > *nextmaxsz)
+	if(strlen(tmp) > nextmaxsz)
 	{
 		LOG(ERROR) << _("simple_uint_generator: next buffer is too small.");
 		nextsz = 0;
 		return;
 	}
 	*nextsz = strlen(tmp);
-	if(*statemaxsz < *nextsz + 1)
+	if(statemaxsz < *nextsz + 1)
 	{
 		LOG(ERROR) << _("simple_uint_generator: state buffer is too small.");
 		*nextsz = 0;
 		return;
 	}
-	*statesz = *nextsz + 1;
+	*statesz = *nextsz;
 	memcpy(next, tmp, *nextsz);
-	memcpy(&state[1], tmp, *nextsz);
+	memcpy(state, tmp, *statesz);
 }
+
+/**@brief produces ipv4 sequence (with port, if set)
+ *
+ * example:
+ *   "192.168.1.1:25"
+ *   "192.168.1.2:25"
+ *    ...
+ * Note that ip, that can't be set to a host in Internet would be skipped
+ * (local, broadcast, reserved, ...) 
+void ipv4_generator(char* state, size_t* statesz, size_t* statemaxsz,
+                    char * next, size_t* nextsz, size_t* nextmaxsz,
+                    int repeat)
+{
+	size_t colon_pos = 1;
+	struct sockaddr_in addr;
+	whie(state[colon_pos] != ':' && colon_pos < *statesz)
+		++colon_pos;
+	// we don't need to convert in network byte order
+	addr.sin_port = (unsigned short)atoi(&state[colon_pos+1]);
+	state[colon_pos] = '\0';
+	*statesz = colon_pos;
+	if(inet_pton(AF_INET, &state[1], (struct sockaddr*)addr) <= 0)
+	{
+		LOG(ERROR) << _("ipv4_generator: inet_pton error.") << " "
+			<< _("Message") << ": " << strerror(errno);
+		nextsz = 0;
+		return;
+	}
+	if(addr.sin_addr.s_addr == inet_addr("223.255.255.255"))
+		addr.sin_addr.s_addr = inet_addr("1.0.0.1");
+
+} TODO:*/
+
+///////////////////////////////////////////////////////////////////////////
+// CursorGenerator
 
 inline long max(const long lhv, const long rhv)
 {
@@ -93,6 +155,7 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 	 ,statesz_(0)
 	 ,statemaxsz_(2048)
 	 ,generator(NULL)
+	 ,repeat_(0)
 {
 	state_   = (char *)malloc(statemaxsz_);
 	memset(state_, 0, statemaxsz_);
@@ -103,19 +166,20 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 		if(arg.first == "repeat" && arg.second.trim().toLower() != L"false"
 				&& arg.second.trim().toLower() != L"0")
 		{
-			state_[0] = 'R';
-			statesz_ = max(1, statesz_);
+			repeat_ = 1;
 		}
 		else if(arg.first == "init")
 		{
 			std::string init_utf8 = arg.second.toUTF8();
-			if(init_utf8.length() + 1  > statemaxsz_)
+			if(init_utf8.length()  > statemaxsz_)
 			{
-				statemaxsz_ = init_utf8.length() + 1;
+				statemaxsz_ = init_utf8.length();
 				state_ = (char*)realloc(state_, statemaxsz_);
 				memset(state_, 0, statemaxsz_);
 			}
-			memcpy(&state_[1], init_utf8.data(), init_utf8.length());
+			memcpy(state_, init_utf8.data(), init_utf8.length());
+			statesz_ = init_utf8.length();
+			initial_ = arg.second;
 		}
 		else if(arg.first == "name")
 		{
@@ -151,9 +215,18 @@ int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
 {
 	if(generator == NULL)
 		return 0;
-	for(size_t i = 0; i < count; ++i)
+	size_t i = 0;
+	if(!initial_.empty())
 	{
-		generator(state_, &statesz_, &statemaxsz_, nextbuf_, &nextbufsz_, &nextbufmaxsz_);
+		buf.push_back(initial_);
+		initial_.clear();
+		++i;
+	}
+	for(; i < count; ++i)
+	{
+		generator(state_, &statesz_, statemaxsz_, 
+		          nextbuf_, &nextbufsz_, nextbufmaxsz_,
+		          repeat_);
 		if(nextbufsz_ == 0)
 			break;
 		buf.push_back(nx::String(nextbuf_, nextbuf_ + nextbufsz_));

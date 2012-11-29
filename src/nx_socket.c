@@ -41,23 +41,24 @@ int SetReusable(SOCKET sock)
  * @param ip - uint32_t ip representation in network byte order*/
 int IPv4Type(const uint32_t ip)
 {
+	/*
 	int result = 0;
-	if( (ip & (uint32_t)0xff) != 0)
+	if( (ip & htonl(0xff << 3*8)) != 0)
 	{
-		if((ip & 0x80)== 0)
+		if((ip & htonl(1 << 31))== 0)
 		{
 			result |= IPv4TYPE_A;
-			if((ip & (uint32_t)0xffffff80) != 0)
+			if((ip & htonl(0xffffff)) != 0)
 			{
-				if((ip & (uint32_t)0xffffff00) == 0xffffff00)
+				if((ip & htonl(0xffffff)) == htonl(0xffffff))
 				{
 					result |= IPv4TYPE_BROADCAST;
 				}
 				else
 				{
 					result |= IPv4TYPE_HOST;
-					if((ip & 0x8f) == 0x8f)
-						result |= IPv4TYPE_LOCAL;
+					if((ip & ()) == 0x8f)
+						result |= IPv4TYPE_PRIVATE;
 				}
 			}
 		}
@@ -74,7 +75,7 @@ int IPv4Type(const uint32_t ip)
 				{
 					result |= IPv4TYPE_HOST;
 					if((ip & 0xfbf) == 0xfbf)
-						result |= IPv4TYPE_LOCAL;
+						result |= IPv4TYPE_PRIVATE;
 				}
 			}
 		}
@@ -91,7 +92,7 @@ int IPv4Type(const uint32_t ip)
 				{
 					result |= IPv4TYPE_HOST;
 					if((ip & 0xffffdf) == 0xffffdf)
-						result |= IPv4TYPE_LOCAL;
+						result |= IPv4TYPE_PRIVATE;
 				}
 			}
 		}
@@ -101,6 +102,9 @@ int IPv4Type(const uint32_t ip)
 			result |= IPv4TYPE_RESERVED;
 	}
 	return result;
+	TODO:rewrite
+	*/
+
 }
 
 void* GetAddr(struct sockaddr* addr)
