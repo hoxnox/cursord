@@ -106,6 +106,7 @@ void simple_uint_generator(char* state, size_t* statesz, const size_t statemaxsz
 	*statesz = *nextsz;
 	memcpy(next, tmp, *nextsz);
 	memcpy(state, tmp, *statesz);
+	free(tmp);
 }
 
 /**@brief produces ipv4 sequence (with port, if set)
