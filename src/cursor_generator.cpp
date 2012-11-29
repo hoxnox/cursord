@@ -5,6 +5,7 @@
 #include "cursor_generator.hpp"
 #include <limits>
 #include <cstring>
+#include <sstream>
 
 namespace cursor {
 
@@ -47,8 +48,9 @@ void simple_uint_generator(char* state, size_t* statesz, const size_t statemaxsz
                            char * next, size_t* nextsz, const size_t nextmaxsz,
                            const int repeat)
 {
-	unsigned int init = 0;
-	unsigned int nextv = 0;
+	std::stringstream ss(state);
+	unsigned long init = 0;
+	unsigned long nextv = 0;
 	if(  state == NULL || statesz == NULL || statemaxsz == 0
 	  || next  == NULL || nextsz  == NULL || nextmaxsz  == 0
 	  || *nextsz > nextmaxsz || *statesz > statemaxsz
@@ -61,13 +63,8 @@ void simple_uint_generator(char* state, size_t* statesz, const size_t statemaxsz
 	if(*statesz == 0)
 		init = 0;
 	else
-	{
-		char * init_c = (char*)malloc(*statesz + 1);
-		memset(init_c, 0, *statesz + 1);
-		memcpy(init_c, state, *statesz);
-		init = (unsigned)atoi(init_c);
-		free(init_c);
-	}
+		ss >> init;
+
 	if(init == std::numeric_limits<unsigned int>::max())
 	{
 		if(repeat)
@@ -89,7 +86,7 @@ void simple_uint_generator(char* state, size_t* statesz, const size_t statemaxsz
 	char *tmp = (char *)malloc(tmpsz);
 	memset(tmp, 0, tmpsz);
 
-	sprintf(tmp, "%d", nextv);
+	sprintf(tmp, "%u", (unsigned int)nextv);
 	if(strlen(tmp) > nextmaxsz)
 	{
 		LOG(ERROR) << _("simple_uint_generator: next buffer is too small.");
@@ -104,7 +101,9 @@ void simple_uint_generator(char* state, size_t* statesz, const size_t statemaxsz
 		return;
 	}
 	*statesz = *nextsz;
+	memset(next, 0, nextmaxsz);
 	memcpy(next, tmp, *nextsz);
+	memset(state, 0, statemaxsz);
 	memcpy(state, tmp, *statesz);
 	free(tmp);
 }
@@ -210,6 +209,10 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 
 CursorGenerator::~CursorGenerator()
 {
+	if(state_)
+		free(state_);
+	if(nextbuf_)
+		free(nextbuf_);
 }
 
 int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
