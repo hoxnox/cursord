@@ -115,30 +115,54 @@ void simple_uint_generator(char* state, size_t* statesz, const size_t statemaxsz
  *   "192.168.1.2:25"
  *    ...
  * Note that ip, that can't be set to a host in Internet would be skipped
- * (local, broadcast, reserved, ...) 
+ * (local, broadcast, reserved, ...) */
 void ipv4_generator(char* state, size_t* statesz, size_t* statemaxsz,
                     char * next, size_t* nextsz, size_t* nextmaxsz,
                     int repeat)
 {
 	size_t colon_pos = 1;
 	struct sockaddr_in addr;
-	whie(state[colon_pos] != ':' && colon_pos < *statesz)
+	while(state[colon_pos] != ':' && colon_pos < *statesz)
 		++colon_pos;
 	// we don't need to convert in network byte order
 	addr.sin_port = (unsigned short)atoi(&state[colon_pos+1]);
 	state[colon_pos] = '\0';
 	*statesz = colon_pos;
-	if(inet_pton(AF_INET, &state[1], (struct sockaddr*)addr) <= 0)
+	if(inet_pton(AF_INET, &state[1], (struct sockaddr*)&addr) <= 0)
 	{
 		LOG(ERROR) << _("ipv4_generator: inet_pton error.") << " "
 			<< _("Message") << ": " << strerror(errno);
 		nextsz = 0;
 		return;
 	}
-	if(addr.sin_addr.s_addr == inet_addr("223.255.255.255"))
-		addr.sin_addr.s_addr = inet_addr("1.0.0.1");
 
-} TODO:*/
+	IPv4Info addr_info;
+	do{
+		if(addr.sin_addr.s_addr == inet_addr("223.255.255.255"))
+		{
+			if(repeat)
+			{
+				addr.sin_addr.s_addr = inet_addr("1.0.0.1");
+			}
+			else
+			{
+				nextsz = 0;
+				return;
+			}
+		}
+		else
+		{
+			addr.sin_addr.s_addr = htonl(ntohl(addr.sin_addr.s_addr) + 1);
+		}
+		addr_info = GetIPv4Info(addr.sin_addr.s_addr);
+	} while(addr_info.addr_type != IPv4_ADDRTYPE_HOST 
+			&& addr_info.net_type != IPv4_NETTYPE_LOCAL 
+			&& addr_info.net_type != IPv4_NETTYPE_UNKNOWN);
+
+	if(inet_ntop())
+	{
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // CursorGenerator
