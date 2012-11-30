@@ -39,72 +39,98 @@ int SetReusable(SOCKET sock)
 
 /**@brief get ipv4 type
  * @param ip - uint32_t ip representation in network byte order*/
-int IPv4Type(const uint32_t ip)
+IPv4Info GetIPv4Info(const uint32_t ip)
 {
-	/*
-	int result = 0;
-	if( (ip & htonl(0xff << 3*8)) != 0)
+	IPv4Info result;
+	uint32_t hostip = ntohl(ip);
+	uint32_t netid = 0, hostid = 0;
+	int private = 0;
+
+	const uint32_t b1000 = (uint32_t)1  << 31; // 10000000 00000000 00000000 00000000
+	const uint32_t b1100 = (uint32_t)3  << 30; // 11000000 00000000 00000000 00000000 
+	const uint32_t b1110 = (uint32_t)7  << 29; // 11100000 00000000 00000000 00000000 
+	const uint32_t b1111 = (uint32_t)15 << 28; // 11110000 00000000 00000000 00000000 
+
+	const uint32_t anetmask  = (uint32_t)0x7f000000; // 01111111 00000000 00000000 00000000
+	const uint32_t ahostmask = (uint32_t)0x00ffffff; // 00000000 11111111 11111111 11111111
+	const uint32_t bnetmask  = (uint32_t)0x3fff0000; // 00111111 11111111 00000000 00000000
+	const uint32_t bhostmask = (uint32_t)0x0000ffff; // 00000000 00000000 11111111 11111111
+	const uint32_t cnetmask  = (uint32_t)0x1fffff00; // 00011111 11111111 11111111 00000000
+	const uint32_t chostmask = (uint32_t)0x000000ff; // 00000000 00000000 00000000 11111111
+
+	result.net_type = IPv4_NETTYPE_UNKNOWN;
+	result.addr_type = IPv4_ADDRTYPE_UNKNOWN; 
+	
+	if( (hostip & b1111) == b1110 )
 	{
-		if((ip & htonl(1 << 31))== 0)
+		result.addr_type = IPv4_ADDRTYPE_BROADCAST;
+		return result;
+	}
+	if( (hostip & b1111) == b1111 )
+	{
+		result.addr_type = IPv4_ADDRTYPE_RESERVED;
+		return result;
+	}
+
+	if((hostip & b1000) == 0)
+	{
+		netid  = (hostip & anetmask)/0x1000000;
+		if(netid == 0)
+			return result;
+		hostid = (hostip & ahostmask);
+		if( (hostip & anetmask) == anetmask )
+			result.net_type = IPv4_NETTYPE_LOCAL;
+		else
+			result.net_type = IPv4_NETTYPE_A;
+		if( hostid == ahostmask )
 		{
-			result |= IPv4TYPE_A;
-			if((ip & htonl(0xffffff)) != 0)
-			{
-				if((ip & htonl(0xffffff)) == htonl(0xffffff))
-				{
-					result |= IPv4TYPE_BROADCAST;
-				}
-				else
-				{
-					result |= IPv4TYPE_HOST;
-					if((ip & ()) == 0x8f)
-						result |= IPv4TYPE_PRIVATE;
-				}
-			}
+			result.addr_type = IPv4_ADDRTYPE_BROADCAST;
+			return result;
 		}
-		else if((ip & 0xc0) == 0x80)
+		if(netid == 10)
+			private = 1;
+	}
+	else if((hostip & b1100) == b1000)
+	{
+		result.net_type = IPv4_NETTYPE_B;
+		netid  = (hostip & bnetmask)/0x10000;
+		hostid = (hostip & bhostmask);
+		if( hostid == bhostmask )
 		{
-			result |= IPv4TYPE_B;
-			if((ip & (uint32_t)0xffff0040) != 0)
-			{
-				if((ip & (uint32_t)0xfffff000) == 0xfffff000)
-				{
-					result |= IPv4TYPE_BROADCAST;
-				}
-				else
-				{
-					result |= IPv4TYPE_HOST;
-					if((ip & 0xfbf) == 0xfbf)
-						result |= IPv4TYPE_PRIVATE;
-				}
-			}
+			result.addr_type = IPv4_ADDRTYPE_BROADCAST;
+			return result;
 		}
-		else if((ip & 0xe0) == 0xc0) 
+		if(  0x2c10 <= netid && netid <= 0x2c20)
+			private = 1;
+	}
+	else if((hostip & b1110) == b1100)
+	{
+		result.net_type = IPv4_NETTYPE_C;
+		netid  = (hostip & cnetmask)/0x100;
+		hostid = (hostip & chostmask);
+		if( hostid == chostmask )
 		{
-			result |= IPv4TYPE_C;
-			if((ip & (uint32_t)0xff000020) != 0)
-			{
-				if((ip & (uint32_t)0xff000000) == 0xff000000)
-				{
-					result |= IPv4TYPE_BROADCAST;
-				}
-				else
-				{
-					result |= IPv4TYPE_HOST;
-					if((ip & 0xffffdf) == 0xffffdf)
-						result |= IPv4TYPE_PRIVATE;
-				}
-			}
+			result.addr_type = IPv4_ADDRTYPE_BROADCAST;
+			return result;
 		}
-		else if( ((ip & 0xf0) == 0xe0) )
-			result |= IPv4TYPE_BROADCAST;
-		else if( ((ip & 0xf0) == 0xf0) )
-			result |= IPv4TYPE_RESERVED;
+		if((netid & 0xff00) == 0xa800)
+			private = 1;
+	}
+	if(hostid == 0)
+	{
+		if(private)
+			result.addr_type = IPv4_ADDRTYPE_NET_PRIVATE;
+		else
+			result.addr_type = IPv4_ADDRTYPE_NET;
+	}
+	else
+	{
+		if(private)
+			result.addr_type = IPv4_ADDRTYPE_HOST_PRIVATE;
+		else
+			result.addr_type = IPv4_ADDRTYPE_HOST;
 	}
 	return result;
-	TODO:rewrite
-	*/
-
 }
 
 void* GetAddr(struct sockaddr* addr)
