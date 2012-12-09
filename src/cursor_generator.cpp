@@ -6,6 +6,7 @@
 #include <limits>
 #include <cstring>
 #include <sstream>
+#include <nx_socket.h>
 
 namespace cursor {
 
@@ -223,6 +224,22 @@ void ipv4_generator(char* state, size_t* statesz, size_t statemaxsz,
 	*statesz = 1 + sizeof(sockaddr_in);
 
 	IPv4Info addr_info;
+	addr_info = GetIPv4Info(addr->sin_addr.s_addr);
+	if(addr_info.addr_type == IPv4_ADDRTYPE_HOST_PRIVATE)
+	{
+		switch(addr_info.net_type)
+		{
+			case IPv4_NETTYPE_A:
+				addr->sin_addr.s_addr = inet_addr("11.0.0.1");
+				break;
+			case IPv4_NETTYPE_B: 
+				addr->sin_addr.s_addr = inet_addr("172.32.0.1");
+				break;
+			case IPv4_NETTYPE_C:
+				addr->sin_addr.s_addr = inet_addr("192.169.0.1");
+				break;
+		}
+	}
 	addr_info = GetIPv4Info(addr->sin_addr.s_addr);
 	while(addr_info.addr_type != IPv4_ADDRTYPE_HOST 
 		|| addr_info.net_type == IPv4_NETTYPE_LOCAL 
