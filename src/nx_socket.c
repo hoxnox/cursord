@@ -100,7 +100,7 @@ IPv4Info GetIPv4Info(const uint32_t ip)
 			result.addr_type = IPv4_ADDRTYPE_BROADCAST;
 			return result;
 		}
-		if(  0x2c10 <= netid && netid <= 0x2c1F)
+		if(  0x2c10 <= netid && netid <= 0x2c20)
 			private = 1;
 	}
 	else if((hostip & b1110) == b1100)
