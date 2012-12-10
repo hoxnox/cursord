@@ -89,4 +89,3 @@ add_executable(cursor-cli ${SRC})
 target_link_libraries(cursor-cli ${LIBRARIES})
 set_target_properties(cursor-cli PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP")
 
-add_executable(ttt ./src/nx_socket.h ./misc/ipv4_helper.c)

@@ -37,6 +37,11 @@ Cursor::Cursor(const Sockaddr addr)
 
 Cursor::~Cursor()
 {
+	if(buf_.empty())
+		LOG(INFO) << _("Cursor destruction: Buffer is empty.");
+	else
+		LOG(INFO) << _("Cursor destruction: ") << buf_.front();
+
 	if(recvbuf_)
 		free(recvbuf_);
 }
@@ -89,7 +94,7 @@ void Cursor::Run()
 	SOCKET sock = init_socket(laddr_);
 	if( !IS_VALID_SOCK(sock) )
 		return;
-	
+
 	LOG(INFO) << _("Starting cursor.") << " " << _("Address") << ": " << tmp << " "
 		<< _("port") << ": " << ntohs(GetPort((sockaddr*)&laddr_));
 
@@ -100,7 +105,7 @@ void Cursor::Run()
 
 		FD_ZERO(&rfds);
 		FD_SET(sock, &rfds);
-		
+
 		struct timeval tm = timeout_;
 
 		rs = select(sock + 1, &rfds, NULL, NULL, &tm);
@@ -150,7 +155,7 @@ void Cursor::Run()
 			LOG(INFO) << _("Received stop signal. Setting STATE_STOP.");
 			state_ = state_ | STATE_STOP;
 			continue;
-		}                                         	
+		}
 		else if(request == "get")
 		{
 			++speedometer_;
@@ -186,7 +191,7 @@ void Cursor::Run()
 			continue;
 		}
 		std::string reply_utf8 = reply.toUTF8();
-		rs_ = sendto(sock, reply_utf8.data(), reply.length(), 0, 
+		rs_ = sendto(sock, reply_utf8.data(), reply.length(), 0,
 				(sockaddr*)&raddr, raddrln);
 		if(rs_ < 0)
 		{

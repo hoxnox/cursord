@@ -70,6 +70,7 @@ void RunCursor(const std::string type, const Args& args, const Sockaddr& addr)
 	else
 		throw TCLAP::ArgException(_("Unknown cursor type"), "t");
 	curs->Run();
+	delete curs;
 	return;
 }
 
