@@ -233,8 +233,7 @@ void ipv4_generator(char* state, size_t* statesz, size_t statemaxsz,
                     char * next, size_t* nextsz, size_t nextmaxsz,
                     int repeat)
 {
-	struct sockaddr_in* addr, *faddr;
-	memset(&addr, 0, sizeof(sockaddr_in));
+	memset(addr, 0, sizeof(sockaddr_in));
 	if(  state == NULL || statesz == NULL || statemaxsz == 0
 	  || next  == NULL || nextsz  == NULL || nextmaxsz  == 0
 	  || *nextsz > nextmaxsz || *statesz > statemaxsz
