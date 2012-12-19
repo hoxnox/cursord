@@ -18,7 +18,10 @@
 #include <cursor.hpp>
 #include <cursor_generator.hpp>
 #include <cursor_file.hpp>
+
+#ifndef CFG_WITHOUT_ODBC
 #include <cursor_odbc.hpp>
+#endif // CFG_WITHOUT_ODBC
 
 
 using namespace nx;
@@ -65,8 +68,10 @@ void RunCursor(const std::string type, const Args& args, const Sockaddr& addr)
 		curs = new CursorGenerator(addr, args);
 	else if(type == "file")
 		curs = new CursorFile(addr, args);
+#ifndef CFG_WITHOUT_ODBC
 	else if(type == "odbc")
 		curs = new CursorODBC(addr, args);
+#endif // CFG_WITHOUT_ODBC
 	else
 		throw TCLAP::ArgException(_("Unknown cursor type"), "t");
 	curs->Run();
