@@ -12,25 +12,27 @@ CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args)
 {
 	size_t init = 0;
 	nx::String fname;
-	for(auto arg : args)
+	for(auto arg=args.begin(); arg != args.end(); ++arg )
 	{
-		if(arg.first == "init")
+		nx::String tmp = arg->second;
+		tmp.trim();
+		if(arg->first == "init")
 		{
-			init = arg.second.toNumber();
+			init = arg->second.toNumber();
 		}
-		else if(arg.first == "repeat" && arg.second.trim().toLower() != L"false"
-				&& arg.second.trim().toLower() != L"0")
+		else if(arg->first == "repeat" && tmp.trim().toLower() != L"false"
+				&& tmp.trim().toLower() != L"0")
 		{
 			repeat_ = true;
 		}
-		else if(arg.first == "name")
+		else if(arg->first == "name")
 		{
-			fname = arg.second;
+			fname = arg->second;
 		}
 		else
 		{
 			LOG(WARNING) << ("Unsupported argument.") << " "
-				<< arg.first << " = " << arg.second;
+				<< arg->first << " = " << arg->second;
 		}
 	}
 	if(fname.empty())

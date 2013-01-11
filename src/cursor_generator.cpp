@@ -398,16 +398,18 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 	memset(state_, 0, statemaxsz_);
 	nextbuf_ = (char *)malloc(nextbufmaxsz_);
 	memset(nextbuf_, 0, nextbufmaxsz_);
-	for(auto arg : args)
+	for(Cursor::Args::const_iterator arg = args.begin(); arg != args.end(); ++arg)
 	{
-		if(arg.first == "repeat" && arg.second.trim().toLower() != L"false"
-				&& arg.second.trim().toLower() != L"0")
+		nx::String tmp = arg->second;
+		tmp.trim();
+		if(arg->first == "repeat" && tmp.toLower() != L"false"
+				&& tmp.toLower() != L"0")
 		{
 			repeat_ = 1;
 		}
-		else if(arg.first == "init")
+		else if(arg->first == "init")
 		{
-			std::string init_utf8 = arg.second.toUTF8();
+			std::string init_utf8 = arg->second.toUTF8();
 			if(init_utf8.length()  > statemaxsz_)
 			{
 				statemaxsz_ = init_utf8.length() + 1;
@@ -417,9 +419,9 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 			memcpy(state_, init_utf8.data(), init_utf8.length());
 			statesz_ = init_utf8.length();
 		}
-		else if(arg.first == "name")
+		else if(arg->first == "name")
 		{
-			nx::String name = arg.second.trim().toLower();
+			nx::String name = tmp.toLower();
 			if(name == "int")
 			{
 				generator = simple_uint_generator;
@@ -431,13 +433,13 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 			else
 			{
 				LOG(ERROR) << _("Unsupported generator.") << " "
-					<< arg.second.toUTF8();
+					<< arg->second.toUTF8();
 			}
 		}
 		else
 		{
 			LOG(WARNING) << ("Unsupported argument.") << " "
-				<< arg.first << " = " << arg.second;
+				<< arg->first << " = " << arg->second;
 		}
 	}
 	if(generator == NULL)

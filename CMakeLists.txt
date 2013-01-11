@@ -11,6 +11,7 @@ project(cursord2)
 
 option(WITHOUT_GLOG "Don't use google logging even it is in the system" OFF)
 option(WITHOUT_IPV4GEN "Don't build ipv4gen tool" ON)
+option(WITHOUT_ODBC "Don't build odbc dependent code" OFF)
 
 ###############################################################################
 
@@ -72,10 +73,15 @@ set(SRC ./src/cursord.cpp
 	./src/cursor_generator.cpp
 	./src/cursor_file.hpp
 	./src/cursor_file.cpp
-	./src/cursor_odbc.hpp
-	./src/cursor_odbc.cpp
 	./src/speedometer.hpp
 	./src/speedometer.cpp)
+if(NOT WITHOUT_ODBC)
+	list(APPEND SRC
+		./src/cursor_odbc.hpp
+		./src/cursor_odbc.cpp)
+else()
+	add_definitions("-DCFG_WITHOUT_ODBC")
+endif()
 add_executable(cursord ${SRC})
 target_link_libraries(cursord ${LIBRARIES})
 set_target_properties(cursord PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP")
