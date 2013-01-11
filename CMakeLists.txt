@@ -10,6 +10,7 @@ project(cursord2)
 # OPTIONS
 
 option(WITHOUT_GLOG "Don't use google logging even it is in the system" OFF)
+option(WITHOUT_IPV4GEN "Don't build ipv4gen tool" ON)
 
 ###############################################################################
 
@@ -82,10 +83,18 @@ set_target_properties(cursord PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c+
 ##########################################################################
 # client
 
-set(SRC ./src/cursor-cli.cpp
+set(SRC_CLI ./src/cursor-cli.cpp
 	./src/string.hpp
 	./src/string.cpp)
-add_executable(cursor-cli ${SRC})
+add_executable(cursor-cli ${SRC_CLI})
 target_link_libraries(cursor-cli ${LIBRARIES})
 set_target_properties(cursor-cli PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP")
 
+###########################################################################
+# ipv4gen
+
+if(NOT WITHOUT_IPV4GEN)
+	set(IPV4GEN_SRC ./misc/ipv4gen.c ./src/nx_socket.h)
+	add_executable(ipv4gen ${IPV4GEN_SRC})
+	target_link_libraries(ipv4gen nx_socket)
+endif()
