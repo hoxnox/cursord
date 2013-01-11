@@ -225,23 +225,24 @@ void ipv4_generator(char* state, size_t* statesz, size_t statemaxsz,
 
 int main(int argc, char * argv[])
 {
-	if(argc < 3)
+	if(argc < 2)
 	{
-		printf("Usage: %s <init> <count>", argv[0]);
+		printf("Usage: %s <init>", argv[0]);
 		return 0;
 	}
-	int count = atoi(argv[2]);
 	char state[1024];
 	size_t statesz = strlen(argv[1]);
 	char buffer[1024];
 	size_t buffersz = 0;
 	int i = 0;
 	memset(state, 0, sizeof(state));
-	memset(buffer, 0, sizeof(state));
 	memcpy(state, argv[1], strlen(argv[1]));
-	for(i=0; i < count; ++i)
+	while(1)
 	{
+		memset(buffer, 0, sizeof(state));
 		ipv4_generator(state, &statesz, sizeof(state), buffer, &buffersz, sizeof(buffer) - 1, 0);
+		if(buffersz == 0)
+			break;
 		printf("%s\n", buffer);
 	}
 	return 0;
