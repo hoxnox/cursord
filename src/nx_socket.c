@@ -8,7 +8,8 @@
 #include <assert.h>
 #include <stdio.h>
 
-/**@brief Set nonblocking mode*/
+/**@brief Set nonblocking mode
+ * @return negative on error, 1 on success*/
 int SetNonBlock(SOCKET sock)
 {
 	int flags;
@@ -19,7 +20,8 @@ int SetNonBlock(SOCKET sock)
 	return 1;
 }
 
-/**@brief set reusable*/
+/**@brief set reusable
+ * @return negative on error, 1 on success*/
 int SetReusable(SOCKET sock)
 {
 	int on = 1, off = 0;
@@ -113,7 +115,7 @@ IPv4Info GetIPv4Info(const uint32_t ip)
 			result.addr_type = IPv4_ADDRTYPE_BROADCAST;
 			return result;
 		}
-		if((netid & 0xff00) == 0xa800)
+		if((netid & 0xffff00) == 0xc0a800)
 			private = 1;
 	}
 	if(hostid == 0)
@@ -234,7 +236,11 @@ int MakeSockaddr(struct sockaddr* src,
 		return -1;
 	src->sa_family = GetFamily(addr, addrln);
 	if( inet_pton(src->sa_family, tmp, GetAddr(src)) != 1 )
+	{
+		free(tmp);
 		return -2;
+	}
+	free(tmp);
 	((struct sockaddr_in6*)src)->sin6_port = port;
 	return 0;
 }
