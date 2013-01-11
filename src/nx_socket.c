@@ -57,8 +57,10 @@ IPv4Info GetIPv4Info(const uint32_t ip)
 	const uint32_t ahostmask = (uint32_t)0x00ffffff; // 00000000 11111111 11111111 11111111
 	const uint32_t bnetmask  = (uint32_t)0x3fff0000; // 00111111 11111111 00000000 00000000
 	const uint32_t bhostmask = (uint32_t)0x0000ffff; // 00000000 00000000 11111111 11111111
+	const uint8_t  b1st_private = (uint8_t)0x3f & (uint8_t)172;  // 1-st byte of net id for private B networks
 	const uint32_t cnetmask  = (uint32_t)0x1fffff00; // 00011111 11111111 11111111 00000000
 	const uint32_t chostmask = (uint32_t)0x000000ff; // 00000000 00000000 00000000 11111111
+	const uint8_t  c1st_private = (uint8_t)0x1f & (uint8_t)192; // 1-st byte of net id for private C networks
 
 	result.net_type = IPv4_NETTYPE_UNKNOWN;
 	result.addr_type = IPv4_ADDRTYPE_UNKNOWN; 
@@ -102,20 +104,21 @@ IPv4Info GetIPv4Info(const uint32_t ip)
 			result.addr_type = IPv4_ADDRTYPE_BROADCAST;
 			return result;
 		}
-		if(  0x2c10 <= netid && netid <= 0x2c1F)
+		if(  netid/0x100 == b1st_private && 16 <= netid%0x100 && netid%0x100 <= 31)
 			private = 1;
 	}
 	else if((hostip & b1110) == b1100)
 	{
 		result.net_type = IPv4_NETTYPE_C;
-		netid  = (hostip & cnetmask)/0x100;
+		netid  = (hostip & cnetmask);
+		netid = netid/0x100;
 		hostid = (hostip & chostmask);
 		if( hostid == chostmask )
 		{
 			result.addr_type = IPv4_ADDRTYPE_BROADCAST;
 			return result;
 		}
-		if((netid & 0xffff00) == 0xc0a800)
+		if(  netid/0x10000 == c1st_private && (netid%0x10000)/0x100 == 0xa8 )
 			private = 1;
 	}
 	if(hostid == 0)
