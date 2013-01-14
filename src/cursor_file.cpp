@@ -99,7 +99,7 @@ CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args)
 	file_.seekg(0, std::ios::beg);
 	if(init > 0)
 		for(size_t i = 0; i < init - 1; ++i)
-			getline(file_, line);
+			getnext();
 	LOG(INFO) << getinfo();
 }
 
