@@ -13,12 +13,23 @@ namespace cursor {
 class CursorFile : public Cursor
 {
 	public:
+		enum FileTypes
+		{
+			FTYPE_TEXT = 0,
+			FTYPE_IPv4 = 1 << 1
+		};
 		CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args);
 		~CursorFile();
 	protected:
 		virtual int Next(const size_t count, std::deque<nx::String>& buf);
 	private:
+		std::string getnext();
+		std::string getinfo(std::string info ="");
+		nx::String fname_;
 		std::ifstream file_;
+		FileTypes ftype_;
+		nx::String suffix_;
+		nx::String prefix_;
 		bool repeat_;
 };
 
