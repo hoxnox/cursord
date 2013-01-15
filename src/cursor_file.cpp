@@ -100,7 +100,11 @@ CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args)
 	file_.seekg(0, std::ios::beg);
 	if(init > 0)
 		for(size_t i = 0; i < init - 1; ++i)
-			getnext();
+			if(getnext().empty())
+			{
+				LOG(WARNING) << "Error skipping initial value";
+				break;
+			}
 	LOG(INFO) << getinfo(init);
 }
 
@@ -114,7 +118,15 @@ std::string CursorFile::getnext()
 {
 	std::string result;
 	if(!file_.good())
-		return result;
+		if(file_.eof() && repeat_)
+		{
+			file_.clear();
+			file_.seekg(0, std::ios::beg);
+		}
+		else
+		{
+			return result;
+		}
 	if(ftype_ == FTYPE_TEXT)
 		getline(file_, result);
 	else if(ftype_ == FTYPE_IPv4)
@@ -124,7 +136,18 @@ std::string CursorFile::getnext()
 		memset(buf, 0, sizeof(buf));
 		file_.read(ip, 4);
 		if(!file_.good())
-			return result;
+			if(file_.eof() && repeat_)
+			{
+				file_.clear();
+				file_.seekg(0, std::ios::beg);
+				file_.read(ip, 4);
+				if(!file_.good())
+					return result;
+			}
+			else
+			{
+				return result;
+			}
 		struct sockaddr_in addr;
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_addr.s_addr = *reinterpret_cast<uint32_t*>(ip);
