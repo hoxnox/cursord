@@ -6,21 +6,22 @@
 
 namespace cursor {
 
-std::string CursorFile::getinfo(std::string init /*=""*/)
+std::string CursorFile::getinfo(size_t init /*=""*/)
 {
-	std::string info = _("Starting file cursor.");
-	info = info + " " +  _("Filename") + ": \"" + fname_.toUTF8() + "\"";
+	std::stringstream info;
+	info << _("Starting file cursor.");
+	info << " " <<  _("Filename") << ": \"" << fname_.toUTF8() << "\"";
 	if(ftype_ == FTYPE_TEXT)
-		info += ", filetype TEXT";
+		info << ", filetype TEXT";
 	if(ftype_ == FTYPE_IPv4)
-		info += ", filetype IPv4";
+		info << ", filetype IPv4";
 	if(!prefix_.empty())
-		info += ", prefix: " + prefix_.toUTF8();
+		info << ", prefix: " << prefix_.toUTF8();
 	if(!suffix_.empty())
-		info += ", suffix: " + suffix_.toUTF8();
-	if(!init.empty())
-		info += ", initial line: " + init;
-	return info;
+		info << ", suffix: " << suffix_.toUTF8();
+	if(init != 0)
+		info << ", initial: " << init;
+	return info.str();
 }
 
 CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args)
@@ -100,7 +101,7 @@ CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args)
 	if(init > 0)
 		for(size_t i = 0; i < init - 1; ++i)
 			getnext();
-	LOG(INFO) << getinfo();
+	LOG(INFO) << getinfo(init);
 }
 
 CursorFile::~CursorFile()

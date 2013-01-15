@@ -24,7 +24,7 @@ class CursorFile : public Cursor
 		virtual int Next(const size_t count, std::deque<nx::String>& buf);
 	private:
 		std::string getnext();
-		std::string getinfo(std::string info ="");
+		std::string getinfo(size_t info = 0);
 		nx::String fname_;
 		std::ifstream file_;
 		FileTypes ftype_;
