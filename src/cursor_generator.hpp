@@ -6,6 +6,7 @@
 #define __NX_CURSOR_GENERATOR_HPP__
 
 #include <map>
+#include <functional>
 
 #include "cursor.hpp"
 #include "string.hpp"
@@ -20,9 +21,15 @@ class CursorGenerator: public Cursor
 	protected:
 		virtual int Next(const size_t count, std::deque<nx::String>& buf);
 	private:
+		std::function<void(char *, size_t *, const size_t, char *, 
+		                   size_t *, const size_t, int)> generator;
+		/*
 		void (*generator)(char* state, size_t* statesz, const size_t statemaxsz,
 		                  char * next, size_t* nextsz, const size_t nextmaxsz,
 		                  int repeat);
+		*/
+		nx::String name_;
+		void      *generator_holder_;
 		int        repeat_;
 		char*      nextbuf_;
 		size_t     nextbufsz_;

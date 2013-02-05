@@ -71,6 +71,8 @@ set(SRC ./src/cursord.cpp
 	./src/cursor.cpp
 	./src/cursor_generator.hpp
 	./src/cursor_generator.cpp
+	./src/ipv4_generator.hpp
+	./src/ipv4_generator.cpp
 	./src/cursor_file.hpp
 	./src/cursor_file.cpp
 	./src/speedometer.hpp
@@ -104,3 +106,4 @@ if(NOT WITHOUT_IPV4GEN)
 	add_executable(ipv4gen ${IPV4GEN_SRC})
 	target_link_libraries(ipv4gen nx_socket)
 endif()
+
