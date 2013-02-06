@@ -7,6 +7,7 @@
 #define __IPV4_GENERATOR__
 
 #include <nx_socket.h>
+#include <string>
 
 namespace cursor {
 

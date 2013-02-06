@@ -1,6 +1,8 @@
 #include <ipv4_generator.hpp>
 #include <gettext.h>
 #include <logging.h>
+#include <cstdio>
+#include <cstdlib>
 
 namespace cursor {
 

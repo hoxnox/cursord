@@ -107,3 +107,11 @@ if(NOT WITHOUT_IPV4GEN)
 	target_link_libraries(ipv4gen nx_socket)
 endif()
 
+###########################################################################
+# ipv4gen_m
+
+if(NOT WITHOUT_IPV4GEN)
+	set(IPV4GEN_M_SRC ./misc/ipv4gen_m.cpp ./src/nx_socket.h ./src/ipv4_generator.cpp ./src/ipv4_generator.hpp)
+	add_executable(ipv4gen_m ${IPV4GEN_M_SRC})
+	target_link_libraries(ipv4gen_m ${LIBRARIES})
+endif()
