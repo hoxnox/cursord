@@ -205,7 +205,8 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 	}
 	else if(name_ == L"ipv4")
 	{
-		IPv4Generator * gipv4 = new IPv4Generator(state_, statesz_, repeat_, mix);
+		IPv4Generator * gipv4 = new IPv4Generator(repeat_, mix);
+		statesz_ = gipv4->init(state_, statesz_, state_, statemaxsz_);
 		generator_holder_ = gipv4;
 		generator = *gipv4;
 	}

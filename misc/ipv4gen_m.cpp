@@ -13,14 +13,18 @@ int main(int argc, char * argv[])
 		return 0;
 	}
 	std::string start;
-	cursor::IPv4Generator ipv4gen(argv[1], strlen(argv[1]), false, true);
+	cursor::IPv4Generator ipv4gen(false, true);
 	char buf[128];
 	memset(buf, 0, sizeof(buf));
 	char state[512];
-	size_t statesz = strlen(argv[1]);
+	size_t statesz = sizeof(state);
+	statesz = ipv4gen.init(argv[1], strlen(argv[1]), state, statesz);
+	if(statesz < 0)
+	{
+		std::cerr << _("Error initializing ipv4 generator") << std::endl;
+		return 0;
+	}
 	size_t bufsz = 1;
-	memset(state, 0, sizeof(state));
-	memcpy(state, argv[1], statesz);
 	if(argc > 2)
 	{
 		while( strcmp(argv[2], buf) != 0 && bufsz != 0)
