@@ -115,3 +115,41 @@ if(NOT WITHOUT_IPV4GEN)
 	add_executable(ipv4gen_m ${IPV4GEN_M_SRC})
 	target_link_libraries(ipv4gen_m ${LIBRARIES})
 endif()
+
+##########################################################################
+# tests
+
+if( BUILD_TESTS )
+	set(SOURCES_TEST
+		./test/tshuffle.hpp
+		./src/shuffle.hpp
+		./src/shuffle.cpp
+		./test/test.cpp
+	)
+	if(BUILD_GTEST)
+		#TODO: Find and check GTEST_SOURCES
+		set(GTEST_SOURCES "${PROJECT_SOURCE_DIR}/../gtest")
+		enable_testing()
+		set(TEST test_${PROJECT_NAME})
+				include_directories("${GTEST_SOURCES}/src")
+		add_executable(${TEST} ${SOURCES_TEST})
+		target_link_libraries("${TEST}" gtest ${LIBRARIES})
+		nx_GTEST_ADD_TESTS("${TEST}" ${SOURCES_TEST})
+	else(BUILD_GTEST)
+		enable_testing()
+		find_package(GTest REQUIRED)
+		include_directories(${GTEST_INCLUDE_DIRS})
+		set(TEST test_${PROJECT_NAME})
+		add_executable(${TEST} ${SOURCES_TEST})
+		if(NOT WIN32)
+			SET_TARGET_PROPERTIES(${TEST} PROPERTIES LINK_FLAGS -pthread)
+		endif(NOT WIN32)
+		target_link_libraries("${TEST}" ${GTEST_LIBRARIES} ${LIBRARIES} )
+		nx_GTEST_ADD_TESTS("${TEST}" ${SOURCES_TEST})
+	endif(BUILD_GTEST)
+	set_target_properties("${TEST}" PROPERTIES
+		COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x")
+else( BUILD_TESTS )
+	message(STATUS "Tests disabled. Use -DBUILD_TESTS=TRUE to enable it.")
+endif( BUILD_TESTS )
+

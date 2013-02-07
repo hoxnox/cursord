@@ -142,6 +142,7 @@ int IPv4Generator::next(uint32_t &curr, const uint32_t final)
 		if(mix_)
 		{
 			curr = ntohl(curr) - initial_;
+			// curr-> next with total length size_
 			curr = (curr + prime_number_)%(size_+1);
 			curr = htonl(curr + initial_);
 		}
