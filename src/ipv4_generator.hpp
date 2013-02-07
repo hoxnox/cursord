@@ -22,15 +22,20 @@ class IPv4Generator
 		IPv4Generator& operator()(char* state, size_t* statesz, size_t statemaxsz,
 			char * next, size_t* nextsz, size_t nextmaxsz,
 			int repeat);
+		size_t size() const { return size_; }
+		size_t pos() const { return counter_; }
 	private:
-		int shift_to_next_host(struct sockaddr_in* addr, struct sockaddr_in* faddr);
-		int shift_bad_addr(struct sockaddr_in* addr, struct sockaddr_in* faddr);
+		int next(uint32_t &curr, const uint32_t final);
+		int shift_to_next_host(struct sockaddr_in* addr, const struct sockaddr_in* faddr);
+		int shift_bad_addr(struct sockaddr_in* addr, const struct sockaddr_in* faddr);
 		bool repeat_;
 		bool mix_;
 
-		uint32_t size_;
-		uint32_t counter_;
-		const uint32_t prime_number;
+		size_t size_;
+		uint32_t size_approx_;
+		size_t counter_;
+		const uint32_t prime_number_;
+		uint32_t initial_;
 };
 
 } // namespace

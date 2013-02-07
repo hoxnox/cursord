@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <nx_socket.h>
+#include "miller.h"
 
 namespace cursor {
 
@@ -13,7 +14,8 @@ IPv4Generator::IPv4Generator(const bool repeat,
 	, mix_(mix)
 	, size_(0)
 	, counter_(0)
-	, prime_number(153)
+	, prime_number_(997)
+	, initial_(0)
 {
 }
 
@@ -49,6 +51,7 @@ int IPv4Generator::init(const char * init, const size_t initsz, char * state, co
 	addr->sin_family = AF_INET;
 	addr->sin_family = AF_INET;
 	addr->sin_addr.s_addr = inet_addr("1.0.0.1");
+	initial_ = ntohl(addr->sin_addr.s_addr);
 	sockaddr_in * faddr = (sockaddr_in*)&state[1 + sizeof(sockaddr_in)];
 	faddr->sin_family = AF_INET;
 	faddr->sin_addr.s_addr = inet_addr("223.255.255.255");
@@ -86,13 +89,33 @@ int IPv4Generator::init(const char * init, const size_t initsz, char * state, co
 			<< _("Message") << ": " << strerror(errno);
 		return 0;
 	}
+	initial_ = ntohl(addr->sin_addr.s_addr);
 	delete [] init_s;
+
+	uint32_t i_faddr  = ntohl(faddr->sin_addr.s_addr);
+	uint32_t i_addr = ntohl(addr->sin_addr.s_addr);
+	if(i_faddr > i_addr)
+	{
+		size_ = i_faddr - i_addr;
+		
+		size_approx_ = size_;
+		int i = 0;
+		if( size_approx_%2 == 0 )
+			i = size_approx_ + 1;
+		else
+			i = size_approx_;
+
+		for(; i<2*size_approx_; i += 2 )
+			if(Miller(i,20))
+				break;
+	}
 
 	if(shift_bad_addr(addr, faddr) < 0)
 	{
 		state[0] = 0x03;
 		return 1;
 	}
+
 	return 2*sizeof(sockaddr_in) + 1;
 }
 
@@ -100,9 +123,39 @@ IPv4Generator::~IPv4Generator()
 {
 }
 
+int IPv4Generator::next(uint32_t &curr, const uint32_t final)
+{
+	if(ntohl(curr) >= ntohl(final))
+	{
+		if(repeat_)
+		{
+			curr = inet_addr("1.0.0.1");
+			counter_ = 0;
+		}
+		else
+		{
+			return -1;
+		}
+	}
+	else
+	{
+		if(mix_)
+		{
+			curr = ntohl(curr) - initial_;
+			curr = (curr + prime_number_)%(size_+1);
+			curr = htonl(curr + initial_);
+		}
+		else
+		{
+			curr = htonl(ntohl(curr) + 1);
+		}
+		++counter_;
+	}
+}
+
 /**@brief shift addr to first, which is HOST & NOT LOCAL & NOT UNKNONWN
  * @repeat - start from the first whe reach the upper bound */
-int IPv4Generator::shift_bad_addr(struct sockaddr_in* addr, struct sockaddr_in* faddr)
+int IPv4Generator::shift_bad_addr(struct sockaddr_in* addr, const struct sockaddr_in* faddr)
 {
 	IPv4Info addr_info;
 	addr_info = GetIPv4Info(addr->sin_addr.s_addr);
@@ -110,18 +163,17 @@ int IPv4Generator::shift_bad_addr(struct sockaddr_in* addr, struct sockaddr_in* 
 		|| addr_info.net_type == IPv4_NETTYPE_LOCAL
 		|| addr_info.net_type == IPv4_NETTYPE_UNKNOWN)
 	{
-		if(ntohl(addr->sin_addr.s_addr) >= ntohl(faddr->sin_addr.s_addr))
+		if(addr_info.addr_type == IPv4_ADDRTYPE_HOST_PRIVATE
+				|| addr_info.addr_type == IPv4_ADDRTYPE_NET_PRIVATE)
 		{
-			if(repeat_)
-				addr->sin_addr.s_addr = inet_addr("1.0.0.1");
-			else
-				return -1;
-		}
-		else
-		{
-			if(addr_info.addr_type == IPv4_ADDRTYPE_HOST_PRIVATE
-					|| addr_info.addr_type == IPv4_ADDRTYPE_NET_PRIVATE)
+			if(mix_)
 			{
+				if( next(addr->sin_addr.s_addr, faddr->sin_addr.s_addr) < 0 )
+					return -1;
+			}
+			else
+			{
+				uint32_t i_addr_old = ntohl(addr->sin_addr.s_addr);
 				switch(addr_info.net_type)
 				{
 					case IPv4_NETTYPE_A:
@@ -137,11 +189,13 @@ int IPv4Generator::shift_bad_addr(struct sockaddr_in* addr, struct sockaddr_in* 
 						LOG(ERROR) << _("Unknown private net type");
 						return -2;
 				};
+				counter_ += ntohl(addr->sin_addr.s_addr) - i_addr_old;
 			}
-			else
-			{
-				addr->sin_addr.s_addr = htonl(ntohl(addr->sin_addr.s_addr) + 1);
-			}
+		}
+		else
+		{
+			if( next(addr->sin_addr.s_addr, faddr->sin_addr.s_addr) < 0 )
+				return -1;
 		}
 		addr_info = GetIPv4Info(addr->sin_addr.s_addr);
 	}
@@ -149,20 +203,10 @@ int IPv4Generator::shift_bad_addr(struct sockaddr_in* addr, struct sockaddr_in* 
 }
 
 /**@beief Same as shoft_to_host, but shifts address to next first*/
-int IPv4Generator::shift_to_next_host(struct sockaddr_in* addr, struct sockaddr_in* faddr)
+int IPv4Generator::shift_to_next_host(struct sockaddr_in* addr, const struct sockaddr_in* faddr)
 {
-	// TODO  if(mix_)
-	if(ntohl(addr->sin_addr.s_addr) >= ntohl(faddr->sin_addr.s_addr))
-	{
-		if(repeat_)
-			addr->sin_addr.s_addr = inet_addr("1.0.0.1");
-		else
-			return -1;
-	}
-	else
-	{
-		addr->sin_addr.s_addr = htonl(ntohl(addr->sin_addr.s_addr) + 1);
-	}
+	if( next(addr->sin_addr.s_addr, faddr->sin_addr.s_addr) < 0 )
+		return -1;
 	return shift_bad_addr(addr, faddr);
 }
 
@@ -268,7 +312,6 @@ IPv4Generator& IPv4Generator::operator()(char* state, size_t* statesz, size_t st
 		*statesz = 1;
 		return *this;
 	}
-	++counter_;
 }
 
 } // namespace

@@ -23,13 +23,7 @@ class CursorGenerator: public Cursor
 	private:
 		std::function<void(char *, size_t *, const size_t, char *, 
 		                   size_t *, const size_t, int)> generator;
-		/*
-		void (*generator)(char* state, size_t* statesz, const size_t statemaxsz,
-		                  char * next, size_t* nextsz, const size_t nextmaxsz,
-		                  int repeat);
-		*/
 		nx::String name_;
-		void      *generator_holder_;
 		int        repeat_;
 		char*      nextbuf_;
 		size_t     nextbufsz_;

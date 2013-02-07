@@ -176,7 +176,9 @@ void Cursor::Run()
 						reply = L"END";
 					}
 					else
+					{
 						LOG(INFO) << "Renew buffer. Last element: " << buf_.back().toUTF8();
+					}
 				}
 				if(!(state_ & STATE_STOP))
 				{

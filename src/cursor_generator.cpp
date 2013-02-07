@@ -6,6 +6,7 @@
 #include "ipv4_generator.hpp"
 #include <limits>
 #include <cstring>
+#include <typeinfo>
 
 namespace cursor {
 
@@ -205,10 +206,10 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 	}
 	else if(name_ == L"ipv4")
 	{
-		IPv4Generator * gipv4 = new IPv4Generator(repeat_, mix);
-		statesz_ = gipv4->init(state_, statesz_, state_, statemaxsz_);
-		generator_holder_ = gipv4;
-		generator = *gipv4;
+		//IPv4Generator * gipv4 = new IPv4Generator(repeat_, mix);
+                IPv4Generator gipv4(repeat_, mix);
+		statesz_ = gipv4.init(state_, statesz_, state_, statemaxsz_);
+		generator = gipv4;
 	}
 	else
 	{
@@ -223,8 +224,6 @@ CursorGenerator::~CursorGenerator()
 		free(state_);
 	if(nextbuf_)
 		free(nextbuf_);
-	if(name_ == L"ipv4" && generator_holder_ != NULL);
-		delete reinterpret_cast<IPv4Generator*>(generator_holder_);
 }
 
 int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
@@ -240,6 +239,17 @@ int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
 		if(nextbufsz_ == 0)
 			break;
 		buf.push_back(nx::String(nextbuf_, nextbuf_ + nextbufsz_));
+	}
+	if(name_ == "ipv4")
+	{
+		
+		IPv4Generator * gen = generator.target<IPv4Generator>();
+		if(gen != NULL)
+		{
+			int percent = ((float)gen->pos() / gen->size())*100;
+			LOG(INFO) << _("Progress") << ": " << gen->pos() << "/" << gen->size() 
+				<< " (" << percent << "%)";
+		}
 	}
 	return 0;
 }

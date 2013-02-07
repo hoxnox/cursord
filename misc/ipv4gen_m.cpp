@@ -16,7 +16,7 @@ int main(int argc, char * argv[])
 	cursor::IPv4Generator ipv4gen(false, true);
 	char buf[128];
 	memset(buf, 0, sizeof(buf));
-	char state[512];
+	char state[128];
 	size_t statesz = sizeof(state);
 	statesz = ipv4gen.init(argv[1], strlen(argv[1]), state, statesz);
 	if(statesz < 0)
@@ -33,7 +33,7 @@ int main(int argc, char * argv[])
 	ipv4gen(state, &statesz, sizeof(state), buf, &bufsz, sizeof(buf), 0);
 	while(bufsz != 0)
 	{
-		std::cout << buf << std::endl;
+		std::cout << buf << " " << ipv4gen.pos() << " of "<< ipv4gen.size()  << std::endl;
 		ipv4gen(state, &statesz, sizeof(state), buf, &bufsz, sizeof(buf), 0);
 	}
 	return 0;
