@@ -5,7 +5,9 @@ namespace cursor {
 /**@class ShuffleGenerator
  * @brief Random generator [0, size]
  *
- * Used to pass through every number from 0 to size in random order.*/
+ * Used to pass through every number from 0 to size in random order.
+ * Internally we use Linear Feedback Shift Register (LFSR) in Galua
+ * configuration with prime polynomial gave full cycle.*/
 
 const unsigned char ShuffleGenerator::prime_poly[32] = {
 	  1, // 00000001
@@ -42,15 +44,14 @@ const unsigned char ShuffleGenerator::prime_poly[32] = {
 	197  // 11000101
 };
 
-// Linear Feedback Shift Register (LFSR) used with prime polynomial gives full cycle,
-// so to generate 2^N random shuffle we can use LFSR.
-
 ShuffleGenerator::ShuffleGenerator(const uint32_t seed  /*= 0xabcdefed*/)
 	: pow2_approx_(0)
 	, size_(0)
 	, count_(0)
-	, register_(seed)
-	, initial_(0)
+	, seed_(seed)
+	, register_(1)
+	, initial_(1)
+	, is_cycle_(false)
 {
 }
 
@@ -59,39 +60,51 @@ inline uint32_t crop(const uint32_t num, unsigned char pow2)
 	if(pow2 >= 32)
 		return num;
 	uint32_t mask = 0xffffffff;
-	return num & (~(mask << pow2));
+	mask <<= pow2;
+	mask = ~mask;
+	return num & mask;
 }
+
+void ShuffleGenerator::init_register()
+{
+	register_ = seed_ == 0 ? 1 : seed_;
+	register_ = crop(register_, pow2_approx_ + 1);
+	if(register_ > size_)
+		GetNext();
+	initial_ = register_;
+}
+
 
 /*@brief Set size*/
 void ShuffleGenerator::Init(uint32_t size)
 {
+	is_cycle_ = false;
 	if(size == 0)
 		return;
 	size_ = size;
-	pow2_approx_ = 1;
+	pow2_approx_ = 0;
 	while(pow2_approx_ < 32)
 	{
-		if(size > (1 << pow2_approx_))
+		if(size >= (1 << (pow2_approx_ + 1)))
 			++pow2_approx_;
 		else
 			break;
 	}
-	register_ = crop(register_, pow2_approx_);
-	if(register_ > size)
-		GetNext();
+	init_register();
 }
 
 /*@brief Get next number*/
 uint32_t ShuffleGenerator::GetNext()
 {
 	uint32_t result = register_;
-	while(register_ > size_)
-	{
+	do{
 		if(register_ & 0x00000001)
-			register_ = ((register_ ^ prime_poly[pow2_approx_]) >> 1) | (1 << pow2_approx_);
+			register_ = ((register_ ^ prime_poly[pow2_approx_ ]) >> 1) | (1 << pow2_approx_);
 		else
-			register_ & (~(0xffffffff << (pow2_approx_ - 1)));
-	}
+			register_ >>= 1;
+	}while(register_ > size_);
+	if(register_ == initial_)
+		is_cycle_ = true;
 	return result;
 }
 
@@ -99,19 +112,20 @@ uint32_t ShuffleGenerator::GetNext()
  * generated value*/
 void ShuffleGenerator::RestoreVal(const uint32_t size, const uint32_t val)
 {
+	Init(size);
+	register_ = val;
 }
 
 /*@brief Restore ShuffleGenerator to previous state, usend count
  * of number generated*/
 void ShuffleGenerator::RestoreCnt(const uint32_t size, const uint32_t count)
 {
+	if(size < count)
+		return;
+	Init(size);
+	for(uint32_t i = 0; i < count; ++i)
+		GetNext();
 }
 
-/*@brief Tells how much numbers were passed*/
-float ShuffleGenerator::Progress()
-{
-	return 0;
-}
-
-}
+} // namespace 
 

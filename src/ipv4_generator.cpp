@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <nx_socket.h>
-#include "miller.h"
 
 namespace cursor {
 
@@ -48,7 +47,6 @@ int IPv4Generator::init(const char * init, const size_t initsz, char * state, co
 	memset(state, 0, sizeof(sockaddr_in)*2 + 1);
 	state[0] = 0x02;
 	sockaddr_in * addr = (sockaddr_in*)&state[1];
-	addr->sin_family = AF_INET;
 	addr->sin_family = AF_INET;
 	addr->sin_addr.s_addr = inet_addr("1.0.0.1");
 	initial_ = ntohl(addr->sin_addr.s_addr);
@@ -97,18 +95,14 @@ int IPv4Generator::init(const char * init, const size_t initsz, char * state, co
 	if(i_faddr > i_addr)
 	{
 		size_ = i_faddr - i_addr;
-		
-		size_approx_ = size_;
-		int i = 0;
-		if( size_approx_%2 == 0 )
-			i = size_approx_ + 1;
-		else
-			i = size_approx_;
-
-		for(; i<2*size_approx_; i += 2 )
-			if(Miller(i,20))
-				break;
+		shuffle_.Init(size_);
 	}
+	else
+	{
+		state[0] = 0x03;
+		return 1;
+	}
+
 
 	if(shift_bad_addr(addr, faddr) < 0)
 	{
@@ -125,33 +119,33 @@ IPv4Generator::~IPv4Generator()
 
 int IPv4Generator::next(uint32_t &curr, const uint32_t final)
 {
-	if(ntohl(curr) >= ntohl(final))
+	++counter_;
+	if(mix_)
 	{
-		if(repeat_)
-		{
-			curr = inet_addr("1.0.0.1");
-			counter_ = 0;
-		}
-		else
-		{
+		if(shuffle_.IsCycle() && !repeat_)
 			return -1;
-		}
+		curr = htonl(initial_ + shuffle_.GetNext());
 	}
 	else
 	{
-		if(mix_)
+		if(ntohl(curr) >= ntohl(final))
 		{
-			curr = ntohl(curr) - initial_;
-			// curr-> next with total length size_
-			curr = (curr + prime_number_)%(size_+1);
-			curr = htonl(curr + initial_);
+			if(repeat_)
+			{
+				curr = inet_addr("1.0.0.1");
+				counter_ = 0;
+			}
+			else
+			{
+				return -1;
+			}
 		}
 		else
 		{
 			curr = htonl(ntohl(curr) + 1);
 		}
-		++counter_;
 	}
+	return 0;
 }
 
 /**@brief shift addr to first, which is HOST & NOT LOCAL & NOT UNKNONWN
@@ -265,8 +259,8 @@ IPv4Generator& IPv4Generator::operator()(char* state, size_t* statesz, size_t st
 		addr->sin_family = AF_INET;
 		addr->sin_addr.s_addr = inet_addr("1.0.0.1");
 		faddr = (sockaddr_in*)&state[1 + sizeof(sockaddr_in)];
-		addr->sin_family = AF_INET;
-		addr->sin_addr.s_addr = inet_addr("223.255.255.255");
+		faddr->sin_family = AF_INET;
+		faddr->sin_addr.s_addr = inet_addr("223.255.255.255");
 	}
 	else if(state[0] == 0x02)
 	{

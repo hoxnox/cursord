@@ -75,6 +75,8 @@ set(SRC ./src/cursord.cpp
 	./src/ipv4_generator.cpp
 	./src/cursor_file.hpp
 	./src/cursor_file.cpp
+	./src/shuffle.hpp
+	./src/shuffle.cpp
 	./src/speedometer.hpp
 	./src/speedometer.cpp)
 if(NOT WITHOUT_ODBC)
@@ -111,7 +113,12 @@ endif()
 # ipv4gen_m
 
 if(NOT WITHOUT_IPV4GEN)
-	set(IPV4GEN_M_SRC ./misc/ipv4gen_m.cpp ./src/nx_socket.h ./src/ipv4_generator.cpp ./src/ipv4_generator.hpp)
+	set(IPV4GEN_M_SRC ./misc/ipv4gen_m.cpp 
+	                  ./src/nx_socket.h
+	                  ./src/ipv4_generator.cpp 
+	                  ./src/ipv4_generator.hpp
+	                  ./src/shuffle.hpp
+	                  ./src/shuffle.cpp)
 	add_executable(ipv4gen_m ${IPV4GEN_M_SRC})
 	target_link_libraries(ipv4gen_m ${LIBRARIES})
 endif()

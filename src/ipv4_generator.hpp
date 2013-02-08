@@ -7,6 +7,7 @@
 #define __IPV4_GENERATOR__
 
 #include <nx_socket.h>
+#include <shuffle.hpp>
 #include <string>
 
 namespace cursor {
@@ -22,7 +23,7 @@ class IPv4Generator
 		IPv4Generator& operator()(char* state, size_t* statesz, size_t statemaxsz,
 			char * next, size_t* nextsz, size_t nextmaxsz,
 			int repeat);
-		size_t size() const { return size_; }
+		size_t size() const { return size_+1; }
 		size_t pos() const { return counter_; }
 	private:
 		int next(uint32_t &curr, const uint32_t final);
@@ -36,6 +37,7 @@ class IPv4Generator
 		size_t counter_;
 		const uint32_t prime_number_;
 		uint32_t initial_;
+		ShuffleGenerator shuffle_;
 };
 
 } // namespace

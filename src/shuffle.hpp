@@ -18,16 +18,19 @@ class ShuffleGenerator
 
 		void RestoreVal(const uint32_t size, const uint32_t val);
 		void RestoreCnt(const uint32_t size, const uint32_t count);
+		bool IsCycle() const { return is_cycle_; }
 
-		float Progress();
 	private:
+		void init_register();
 		static const unsigned char prime_poly[32];
 		unsigned char pow2_approx_;
 		uint32_t size_;
 		uint32_t count_;
 		uint32_t register_;
+		uint32_t seed_;
 		uint32_t initial_;
 		uint32_t crop_mask_;
+		bool is_cycle_;
 };
 
 } // namespace
