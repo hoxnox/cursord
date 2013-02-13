@@ -12,6 +12,8 @@ project(cursord2)
 option(WITHOUT_GLOG "Don't use google logging even it is in the system" OFF)
 option(WITHOUT_IPV4GEN "Don't build ipv4gen tool" ON)
 option(WITHOUT_ODBC "Don't build odbc dependent code" OFF)
+option(GENERATE_DOC "Don't generate docs" ON)
+
 
 ###############################################################################
 
@@ -160,3 +162,17 @@ else( BUILD_TESTS )
 	message(STATUS "Tests disabled. Use -DBUILD_TESTS=TRUE to enable it.")
 endif( BUILD_TESTS )
 
+###########################################################################
+# docs
+
+if(GENERATE_DOC)
+	FIND_PACKAGE(Doxygen)
+	if(DOXYGEN_FOUND)
+		set(ENV{CURSORD_ROOT} ${PROJECT_SOURCE_DIR})
+		ADD_CUSTOM_TARGET(doc COMMAND ${CMAKE_COMMAND} 
+			-D PDIR="${PROJECT_SOURCE_DIR}"
+			-P "${PROJECT_SOURCE_DIR}/doc/doxygen.cmake")
+	else()
+		message(WARNING "Doxygen not found. Documentation wouldn't be ganarated")
+	endif()
+endif()
