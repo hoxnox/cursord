@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <nx_socket.h>
+#include <memory.h>
 
 namespace cursor {
 
