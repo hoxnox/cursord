@@ -305,8 +305,9 @@ int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
 		IPv4Generator * gen = generator.target<IPv4Generator>();
 		if(gen != NULL)
 		{
-			int percent = ((float)gen->pos() / gen->size())*100;
-			LOG(INFO) << _("Progress") << ": " << gen->pos() << "/" << gen->size()
+			size_t sz = (shared_ ? gen->size()/shared_total_ : gen->size());
+			int percent = ((float)gen->pos() / sz)*100;
+			LOG(INFO) << _("Progress") << ": " << gen->pos() << "/" << sz
 				<< " (" << percent << "%)";
 		}
 	}
