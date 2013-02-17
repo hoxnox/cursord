@@ -306,8 +306,9 @@ int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
 		if(gen != NULL)
 		{
 			size_t sz = (shared_ ? gen->size()/shared_total_ : gen->size());
-			int percent = ((float)gen->pos() / sz)*100;
-			LOG(INFO) << _("Progress") << ": " << gen->pos() << "/" << sz
+			size_t ps = (shared_ ? gen->pos()/shared_total_ : gen->pos());
+			int percent = ((float)ps / sz)*100;
+			LOG(INFO) << _("Progress") << ": " << ps << "/" << sz
 				<< " (" << percent << "%)";
 		}
 	}
