@@ -83,12 +83,19 @@ void ShuffleGenerator::Init(uint32_t size)
 		return;
 	size_ = size;
 	pow2_approx_ = 0;
-	while(pow2_approx_ < 32)
+	if(size > 2147483647L)
 	{
-		if(size >= (1 << (pow2_approx_ + 1)))
-			++pow2_approx_;
-		else
-			break;
+		pow2_approx_ = 31;
+	}
+	else
+	{
+		while(pow2_approx_ < 32)
+		{
+			if(size >= (1 << (pow2_approx_ + 1)))
+				++pow2_approx_;
+			else
+				break;
+		}
 	}
 	init_register();
 }
