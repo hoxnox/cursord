@@ -299,6 +299,7 @@ IPv4Generator& IPv4Generator::operator()(char* state, size_t* statesz, size_t st
 		nextsz = 0;
 		return *this;
 	}
+	memset(next, 0, nextmaxsz);
 	memcpy(next, tmp, strlen(tmp));
 	*nextsz = strlen(tmp);
 

@@ -17,7 +17,7 @@ namespace cursor {
  *
  * @code
  *      void (*generator)(char* state, size_t* statesz, const size_t statemaxsz,
- *                        char * next, size_t* nextsz, const size_t nextmaxsz, 
+ *                        char * next, size_t* nextsz, const size_t nextmaxsz,
  *                        const int repeat);
  * @endcode
  *
@@ -32,7 +32,7 @@ namespace cursor {
  *         over statemaxsz to the state.
  * next - is the buffer, used to save generated value.
  * nextsz - size of next parameter
- * nextmaxsz - maximum buffer size of the next parameter. 
+ * nextmaxsz - maximum buffer size of the next parameter.
  * repeat - Repeat flag is used, to indicate behaviour if the generator reaches
  *         maximum value (if it has).
  *
@@ -251,7 +251,7 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 	{
 		for(size_t i = 0; i < shared_curr_ - 1; ++i)
 		{
-			generator(state_, &statesz_, statemaxsz_, 
+			generator(state_, &statesz_, statemaxsz_,
 			          nextbuf_, &nextbufsz_, nextbufmaxsz_,
 			          repeat_);
 			if(nextbufsz_ == 0)
@@ -275,7 +275,7 @@ int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
 	size_t i = 0;
 	for(; i < count; ++i)
 	{
-		generator(state_, &statesz_, statemaxsz_, 
+		generator(state_, &statesz_, statemaxsz_,
 		          nextbuf_, &nextbufsz_, nextbufmaxsz_,
 		          repeat_);
 		if(nextbufsz_ == 0)
@@ -286,7 +286,7 @@ int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
 			bool fail_flag = false;
 			for(size_t i = 0; i < shared_total_ - 1; ++i)
 			{
-				generator(state_, &statesz_, statemaxsz_, 
+				generator(state_, &statesz_, statemaxsz_,
 				          nextbuf_, &nextbufsz_, nextbufmaxsz_,
 				          repeat_);
 				if(nextbufsz_ == 0)
@@ -301,12 +301,12 @@ int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
 	}
 	if(name_ == "ipv4")
 	{
-		
+
 		IPv4Generator * gen = generator.target<IPv4Generator>();
 		if(gen != NULL)
 		{
 			int percent = ((float)gen->pos() / gen->size())*100;
-			LOG(INFO) << _("Progress") << ": " << gen->pos() << "/" << gen->size() 
+			LOG(INFO) << _("Progress") << ": " << gen->pos() << "/" << gen->size()
 				<< " (" << percent << "%)";
 		}
 	}
