@@ -12,6 +12,11 @@ namespace cursor {
 class CursorODBC: public Cursor
 {
 	public:
+		CursorODBC(const Cursor::Sockaddr addr, const Cursor::Args args,
+		           const size_t shared_curr, const size_t shared_total)
+			: Cursor(addr)
+		{ // TODO: 
+		};
 		CursorODBC(const Cursor::Sockaddr addr, const Cursor::Args args);
 		~CursorODBC();
 	protected:

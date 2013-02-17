@@ -18,6 +18,11 @@ class CursorFile : public Cursor
 			FTYPE_TEXT = 0,
 			FTYPE_IPv4 = 1 << 1
 		};
+		CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args,
+		           const size_t shared_curr, const size_t shared_total)
+			: Cursor(addr)
+		{ // TODO: 
+		};
 		CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args);
 		~CursorFile();
 	protected:
