@@ -146,7 +146,7 @@ inline long max(const long lhv, const long rhv)
 
 void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 {
-	bool mix = false;
+	bool mix = false, priv = false;
 	state_   = (char *)malloc(statemaxsz_);
 	memset(state_, 0, statemaxsz_);
 	nextbuf_ = (char *)malloc(nextbufmaxsz_);
@@ -159,6 +159,11 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 				&& tmp.toLower() != L"0")
 		{
 			repeat_ = 1;
+		}
+		else if(arg->first == "private" && tmp.toLower() != L"false"
+				&& tmp.toLower() != L"0")
+		{
+			priv = true;
 		}
 		else if(arg->first == "init")
 		{
@@ -193,6 +198,9 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 		return;
 	}
 
+	if(priv && name_ != L"ipv4")
+		LOG(WARNING) << ("Unsupported argument \"private\" for this generator type.");
+
 	if(name_ == L"int")
 	{
 		generator = simple_uint_generator;
@@ -201,6 +209,8 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 	{
 		//IPv4Generator * gipv4 = new IPv4Generator(repeat_, mix);
                 IPv4Generator gipv4(repeat_, mix);
+		if(priv)
+			gipv4.SetSkipPrivate(false);
 		statesz_ = gipv4.init(state_, statesz_, state_, statemaxsz_);
 		generator = gipv4;
 	}

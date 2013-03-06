@@ -23,6 +23,7 @@ class IPv4Generator
 		IPv4Generator& operator()(char* state, size_t* statesz, size_t statemaxsz,
 			char * next, size_t* nextsz, size_t nextmaxsz,
 			int repeat);
+		void SetSkipPrivate(bool skip) { skip_private_ = skip; }
 		size_t size() const { return size_+1; }
 		size_t pos() const { return counter_; }
 	private:
@@ -38,6 +39,7 @@ class IPv4Generator
 		const uint32_t prime_number_;
 		uint32_t initial_;
 		ShuffleGenerator shuffle_;
+		bool skip_private_;
 };
 
 } // namespace

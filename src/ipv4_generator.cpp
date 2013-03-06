@@ -16,6 +16,7 @@ IPv4Generator::IPv4Generator(const bool repeat,
 	, counter_(0)
 	, prime_number_(997)
 	, initial_(0)
+	, skip_private_(true)
 {
 }
 
@@ -159,9 +160,11 @@ int IPv4Generator::shift_bad_addr(struct sockaddr_in* addr, const struct sockadd
 		|| addr_info.net_type == IPv4_NETTYPE_LOCAL
 		|| addr_info.net_type == IPv4_NETTYPE_UNKNOWN)
 	{
-		if(addr_info.addr_type == IPv4_ADDRTYPE_HOST_PRIVATE
-				|| addr_info.addr_type == IPv4_ADDRTYPE_NET_PRIVATE)
+		if((addr_info.addr_type == IPv4_ADDRTYPE_HOST_PRIVATE
+				|| addr_info.addr_type == IPv4_ADDRTYPE_NET_PRIVATE))
 		{
+			if(!skip_private_)
+				break;
 			if(mix_)
 			{
 				if( next(addr->sin_addr.s_addr, faddr->sin_addr.s_addr) < 0 )
