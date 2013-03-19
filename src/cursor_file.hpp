@@ -6,6 +6,7 @@
 #define __NX_CURSOR_FILE_HPP__
 
 #include <fstream>
+#include "ipv4_generator.hpp"
 #include "cursor.hpp"
 
 namespace cursor {
@@ -15,12 +16,14 @@ class CursorFile : public Cursor
 	public:
 		enum FileTypes
 		{
-			FTYPE_TEXT = 0,
-			FTYPE_IPv4 = 1 << 1
+			FTYPE_TEXT       = 0,
+			FTYPE_IPv4       = 1 << 1,
+			FTYPE_IPv4RANGES = 1 << 2
 		};
 		CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args,
 		           const size_t shared_curr, const size_t shared_total)
 			: Cursor(addr)
+			, ipv4gen_(false)
 		{ // TODO: 
 		};
 		CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args);
@@ -36,6 +39,10 @@ class CursorFile : public Cursor
 		nx::String suffix_;
 		nx::String prefix_;
 		bool repeat_;
+		bool initialized_;
+		char state_[256];
+		size_t statesz_;
+		IPv4Generator ipv4gen_;
 };
 
 } // namespace

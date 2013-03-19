@@ -125,6 +125,13 @@ if(NOT WITHOUT_IPV4GEN)
 	target_link_libraries(ipv4gen_m ${LIBRARIES})
 endif()
 
+###########################################################################
+# range_cvt
+
+if(NOT WITHOUT_RANGECVT)
+	add_executable(range_cvt ./misc/range_cvt.cpp)
+endif()
+
 ##########################################################################
 # tests
 
