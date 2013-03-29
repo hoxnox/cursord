@@ -309,9 +309,8 @@ int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
 				break;
 		}
 	}
-	if(name_ == "ipv4")
+	if(name_ == "ipv4" && !repeat_)
 	{
-
 		IPv4Generator * gen = generator.target<IPv4Generator>();
 		if(gen != NULL)
 		{

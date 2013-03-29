@@ -27,19 +27,19 @@ class IPv4Generator
 		size_t size() const { return size_+1; }
 		size_t pos() const { return counter_; }
 	private:
-		int next(uint32_t &curr, const uint32_t final);
+		int next              (uint32_t &curr, const uint32_t final);
 		int shift_to_next_host(struct sockaddr_in* addr, const struct sockaddr_in* faddr);
-		int shift_bad_addr(struct sockaddr_in* addr, const struct sockaddr_in* faddr);
+		int shift_bad_addr    (struct sockaddr_in* addr, const struct sockaddr_in* faddr);
 		bool repeat_;
 		bool mix_;
 
-		size_t size_;
-		uint32_t size_approx_;
-		size_t counter_;
-		const uint32_t prime_number_;
-		uint32_t initial_;
+		size_t           size_;
+		uint32_t         size_approx_;
+		size_t           counter_;
+		const uint32_t   prime_number_;
+		uint32_t         initial_;
 		ShuffleGenerator shuffle_;
-		bool skip_private_;
+		bool             skip_private_;
 };
 
 } // namespace

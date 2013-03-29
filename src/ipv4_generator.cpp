@@ -22,6 +22,7 @@ IPv4Generator::IPv4Generator(const bool repeat,
 
 int IPv4Generator::init(const char * init, const size_t initsz, char * state, const size_t &statesz)
 {
+	counter_ = 0;
 	char * init_s = new char[initsz + 1];
 	memcpy(init_s, init, initsz);
 	init_s[initsz] = 0;

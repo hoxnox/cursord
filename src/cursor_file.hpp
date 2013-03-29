@@ -33,6 +33,8 @@ class CursorFile : public Cursor
 	private:
 		std::string getnext();
 		std::string getinfo(size_t info = 0);
+		size_t totalsz_;
+		size_t passedsz_;
 		nx::String fname_;
 		std::ifstream file_;
 		FileTypes ftype_;

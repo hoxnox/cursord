@@ -24,13 +24,58 @@ std::string CursorFile::getinfo(size_t init /*=""*/)
 	return info.str();
 }
 
+size_t getFileSz(std::ifstream& file, CursorFile::FileTypes type)
+{
+	size_t result = 0;
+	if(!file.is_open())
+		return result;
+	file.clear();
+	file.seekg(0, std::ios::beg);
+	if(type == CursorFile::FTYPE_TEXT)
+	{
+		std::string line;
+		getline(file, line);
+		while(!file.eof())
+		{
+			++result;
+			getline(file, line);
+		}
+	}
+	else if(type == CursorFile::FTYPE_IPv4 || type == CursorFile::FTYPE_IPv4RANGES)
+	{
+		file.seekg (0, file.end);
+		size_t filesz = file.tellg();
+		file.seekg(0, std::ios::beg);
+		if(type == CursorFile::FTYPE_IPv4RANGES)
+		{
+			for(size_t i = 0; i < filesz/8 && !file.eof(); ++i)
+			{
+				char buf[8] = {0,0,0,0,0,0,0,0};
+				file.read(buf, 8);
+				uint32_t rha = ntohl(*(uint32_t*)&buf[4]);
+				uint32_t lha = ntohl(*(uint32_t*)buf);
+				if(rha > lha)
+					result += (rha - lha) + 1;
+			}
+		}
+		else
+			result = filesz/4;
+
+	}
+	file.clear();
+	file.seekg(0, std::ios::beg);
+	return result;
+}
+
 CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args)
 	: Cursor(addr)
-	 ,repeat_(false)
-	 ,ftype_(FTYPE_TEXT)
+	, repeat_(false)
+	, ftype_(FTYPE_TEXT)
 	, ipv4gen_(false)
 	, statesz_(0)
 	, initialized_(false)
+	, totalsz_(0)
+	, passedsz_(0)
 {
 	size_t init = 0;
 	nx::String ftype;
@@ -94,17 +139,14 @@ CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args)
 			<<_("Filename") << ": " << fname_.toUTF8();
 		return;
 	}
-	std::string line;
-	getline(file_, line);
-	if(file_.eof() && line.empty())
+	totalsz_ = getFileSz(file_, ftype_);
+	if(totalsz_ == 0)
 	{
 		LOG(WARNING) << _("File") << ": \"" << fname_.toUTF8() << "\"" << " " 
 			<< _("is empty.");
 		repeat_ = false;
 		return;
 	}
-	file_.clear();
-	file_.seekg(0, std::ios::beg);
 	if(init > 0)
 		for(size_t i = 0; i < init - 1; ++i)
 			if(getnext().empty())
@@ -135,13 +177,17 @@ std::string CursorFile::getnext()
 			return result;
 		}
 	if(ftype_ == FTYPE_TEXT)
+	{
 		getline(file_, result);
+		++passedsz_;
+	}
 	else if(ftype_ == FTYPE_IPv4)
 	{
 		char ip[4];
 		char buf[50];
 		memset(buf, 0, sizeof(buf));
 		file_.read(ip, 4);
+		++passedsz_;
 		if(!file_.good())
 		{
 			if(file_.eof() && repeat_)
@@ -171,8 +217,10 @@ std::string CursorFile::getnext()
 		char rsbuf[50];
 		size_t rsbufsz = 0;
 		if(initialized_)
+		{
 			ipv4gen_(state_, &statesz_, sizeof(state_),
 					rsbuf, &rsbufsz, sizeof(rsbuf), 0);
+		}
 		while( rsbufsz == 0 || !initialized_)
 		{
 			char ipbuf[8];
@@ -223,6 +271,7 @@ std::string CursorFile::getnext()
 					initialized_ = true;
 					ipv4gen_(state_, &statesz_, sizeof(state_),
 						rsbuf, &rsbufsz, sizeof(rsbuf), 0);
+					passedsz_ += ipv4gen_.size();
 				}
 			}
 		}
@@ -247,7 +296,7 @@ int CursorFile::Next(const size_t count, std::deque<nx::String>& buf /*= buf_*/)
 			}
 			else
 			{
-				return 0;
+				break;
 			}
 		}
 		if(!line.empty())
@@ -260,6 +309,15 @@ int CursorFile::Next(const size_t count, std::deque<nx::String>& buf /*= buf_*/)
 				result += suffix_;
 			buf.push_back(result);
 		}
+	}
+	if(!repeat_)
+	{
+		size_t passedsz = passedsz_;
+		if(ftype_ = FTYPE_IPv4RANGES)
+			passedsz -= ipv4gen_.size() - ipv4gen_.pos();
+		int percent = ((float)passedsz/totalsz_)*100;
+		LOG(INFO) << _("Progress") << ": " << passedsz << "/" << totalsz_
+			<< " (" << percent << "%)";
 	}
 	return 0;
 }
