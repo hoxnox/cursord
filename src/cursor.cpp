@@ -23,9 +23,17 @@ namespace cursor
  * @param addr Address to bind server.*/
 Cursor::Cursor(const Sockaddr addr)
 	: state_(0)
-	 ,recvbuf_(NULL)
-	 ,recvbufsz_(2000)
-	 ,bufsz_(1000)
+	, recvbuf_(NULL)
+	, recvbufsz_(2000)
+	, bufsz_(1000)
+	, shared_(false)
+	, shared_curr_(0)
+	, shared_total_(0)
+{
+	init(addr);
+}
+
+void Cursor::init(const Sockaddr addr)
 {
 	timeout_.tv_sec = 30;
 	timeout_.tv_usec = 0;
@@ -34,6 +42,25 @@ Cursor::Cursor(const Sockaddr addr)
 	memset(&laddr_, 0, sizeof(Sockaddr));
 	memcpy(&laddr_, &addr, sizeof(Sockaddr));
 }
+
+Cursor::Cursor(const Sockaddr addr, const size_t shared_curr, const size_t shared_total)
+	: state_(0)
+	, recvbuf_(NULL)
+	, recvbufsz_(2000)
+	, bufsz_(1000)
+	, shared_(true)
+	, shared_curr_(shared_curr)
+	, shared_total_(shared_total)
+{
+	init(addr);
+	if(shared_total_ < shared_curr_ || shared_curr_ == 0 || shared_total_ == 0)
+	{
+		shared_ = false;
+		shared_curr_ = 0;
+		shared_total_ = 0;
+	}
+}
+
 
 Cursor::~Cursor()
 {
@@ -202,6 +229,27 @@ void Cursor::Run()
 			state_ = STATE_STOP | STATE_ERROR;
 		}
 	}
+}
+
+int Cursor::Next(const size_t count, std::deque<nx::String>& buf)
+{
+	int rs;
+	if(shared_)
+	{
+		std::deque<nx::String> tmpbuf;
+		rs = do_next(count * shared_total_, tmpbuf);
+		if(rs >= 0)
+			for(size_t i = 0, j = shared_curr_ - 1; i < count && j < tmpbuf.size(); 
+					++i, j = shared_curr_ - 1 + shared_total_*i )
+			{
+				buf.push_back(tmpbuf[j]);
+			}
+	}
+	else
+	{
+		rs = do_next(count, buf);
+	}
+	return rs;
 }
 
 } //namespace

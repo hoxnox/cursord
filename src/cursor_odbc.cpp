@@ -15,7 +15,7 @@ CursorODBC::~CursorODBC()
 {
 }
 
-int CursorODBC::Next(const size_t count, std::deque<nx::String>& buf /*= buf_*/)
+int CursorODBC::do_next(const size_t count, std::deque<nx::String>& buf /*= buf_*/)
 {
 	return 0;
 }

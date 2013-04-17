@@ -77,6 +77,25 @@ CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args)
 	, totalsz_(0)
 	, passedsz_(0)
 {
+	init(addr, args);
+}
+
+CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args,
+                       const size_t shared_curr, const size_t shared_total)
+	: Cursor(addr, shared_curr, shared_total)
+	, repeat_(false)
+	, ftype_(FTYPE_TEXT)
+	, ipv4gen_(false)
+	, statesz_(0)
+	, initialized_(false)
+	, totalsz_(0)
+	, passedsz_(0)
+{
+	init(addr, args);
+}
+
+void CursorFile::init(const Cursor::Sockaddr addr, const Cursor::Args args)
+{
 	size_t init = 0;
 	nx::String ftype;
 	for(auto arg=args.begin(); arg != args.end(); ++arg )
@@ -281,7 +300,7 @@ std::string CursorFile::getnext()
 	return result;
 }
 
-int CursorFile::Next(const size_t count, std::deque<nx::String>& buf /*= buf_*/)
+int CursorFile::do_next(const size_t count, std::deque<nx::String>& buf /*= buf_*/)
 {
 	for(size_t i = 0; i < count; ++i)
 	{

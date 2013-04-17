@@ -229,9 +229,6 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 	, statemaxsz_(2048)
 	, generator(NULL)
 	, repeat_(0)
-	, shared_(false)
-	, shared_curr_(0)
-	, shared_total_(0)
 {
 	init(addr, args);
 }
@@ -239,35 +236,15 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 
 CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args args,
                                  const size_t shared_curr, const size_t shared_total)
-	: Cursor(addr)
+	: Cursor(addr, shared_curr, shared_total)
 	, nextbufsz_(0)
 	, nextbufmaxsz_(2048)
 	, statesz_(0)
 	, statemaxsz_(2048)
 	, generator(NULL)
 	, repeat_(0)
-	, shared_(true)
-	, shared_curr_(shared_curr)
-	, shared_total_(shared_total)
 {
 	init(addr, args);
-	if(shared_total_ < shared_curr_ || shared_curr_ == 0 || shared_total_ == 0)
-	{
-		shared_ = false;
-		shared_curr_ = 0;
-		shared_total_ = 0;
-	}
-	else
-	{
-		for(size_t i = 0; i < shared_curr_ - 1; ++i)
-		{
-			generator(state_, &statesz_, statemaxsz_,
-			          nextbuf_, &nextbufsz_, nextbufmaxsz_,
-			          repeat_);
-			if(nextbufsz_ == 0)
-				break;
-		}
-	}
 }
 
 CursorGenerator::~CursorGenerator()
@@ -278,7 +255,7 @@ CursorGenerator::~CursorGenerator()
 		free(nextbuf_);
 }
 
-int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
+int CursorGenerator::do_next(const size_t count, std::deque<nx::String>& buf)
 {
 	if(generator == NULL)
 		return 0;
@@ -291,31 +268,14 @@ int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
 		if(nextbufsz_ == 0)
 			break;
 		buf.push_back(nx::String(nextbuf_, nextbuf_ + nextbufsz_));
-		if(shared_)
-		{
-			bool fail_flag = false;
-			for(size_t i = 0; i < shared_total_ - 1; ++i)
-			{
-				generator(state_, &statesz_, statemaxsz_,
-				          nextbuf_, &nextbufsz_, nextbufmaxsz_,
-				          repeat_);
-				if(nextbufsz_ == 0)
-				{
-					fail_flag = true;
-					break;
-				}
-			}
-			if(fail_flag)
-				break;
-		}
 	}
 	if(name_ == "ipv4" && !repeat_)
 	{
 		IPv4Generator * gen = generator.target<IPv4Generator>();
 		if(gen != NULL)
 		{
-			size_t sz = (shared_ ? gen->size()/shared_total_ : gen->size());
-			size_t ps = (shared_ ? gen->pos()/shared_total_ : gen->pos());
+			size_t sz = gen->size();
+			size_t ps = gen->pos();
 			int percent = ((float)ps / sz)*100;
 			LOG(INFO) << _("Progress") << ": " << ps << "/" << sz
 				<< " (" << percent << "%)";
