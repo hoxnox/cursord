@@ -332,7 +332,7 @@ int CursorFile::do_next(const size_t count, std::deque<nx::String>& buf /*= buf_
 	if(!repeat_)
 	{
 		size_t passedsz = passedsz_;
-		if(ftype_ = FTYPE_IPv4RANGES)
+		if(ftype_ == FTYPE_IPv4RANGES)
 			passedsz -= ipv4gen_.size() - ipv4gen_.pos();
 		int percent = ((float)passedsz/totalsz_)*100;
 		LOG(INFO) << _("Progress") << ": " << passedsz << "/" << totalsz_
