@@ -95,7 +95,7 @@ int IPv4Generator::init(const char * init, const size_t initsz, char * state, co
 
 	uint32_t i_faddr  = ntohl(faddr->sin_addr.s_addr);
 	uint32_t i_addr = ntohl(addr->sin_addr.s_addr);
-	if(i_faddr > i_addr)
+	if(i_faddr >= i_addr)
 	{
 		size_ = i_faddr - i_addr;
 		shuffle_.Init(size_);
