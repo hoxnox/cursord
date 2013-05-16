@@ -155,15 +155,15 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 	{
 		nx::String tmp = arg->second;
 		tmp.trim();
-		if(arg->first == "repeat" && tmp.toLower() != L"false"
-				&& tmp.toLower() != L"0")
+		if(arg->first == "repeat")
 		{
-			repeat_ = 1;
+			if(tmp.toLower() != L"false" && tmp.toLower() != L"0")
+				repeat_ = 1;
 		}
-		else if(arg->first == "private" && tmp.toLower() != L"false"
-				&& tmp.toLower() != L"0")
+		else if(arg->first == "private")
 		{
-			priv = true;
+			if(tmp.toLower() != L"false" && tmp.toLower() != L"0")
+				priv = true;
 		}
 		else if(arg->first == "init")
 		{
@@ -177,10 +177,10 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 			memcpy(state_, init_utf8.data(), init_utf8.length());
 			statesz_ = init_utf8.length();
 		}
-		else if(arg->first == "mix" && tmp.toLower() != L"false"
-				&& tmp.toLower() != L"0")
+		else if(arg->first == "mix")
 		{
-			mix = true;
+			if(tmp.toLower() != L"false" && tmp.toLower() != L"0")
+				mix = true;
 		}
 		else if(arg->first == "name")
 		{
