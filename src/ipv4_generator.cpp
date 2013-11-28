@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <nx_socket.h>
 #include <memory.h>
+#include <stdlib.h>
 
 namespace cursor {
 
@@ -20,7 +21,10 @@ IPv4Generator::IPv4Generator(const bool repeat,
 {
 }
 
-int IPv4Generator::init(const char * init, const size_t initsz, char * state, const size_t &statesz)
+int
+IPv4Generator::init(const char * init, const size_t initsz,
+                    char * state, const size_t &statesz,
+                    const uint32_t shuffle_restore_val /*= 0*/)
 {
 	counter_ = 0;
 	char * init_s = new char[initsz + 1];
@@ -98,7 +102,21 @@ int IPv4Generator::init(const char * init, const size_t initsz, char * state, co
 	if(i_faddr >= i_addr)
 	{
 		size_ = i_faddr - i_addr;
-		shuffle_.Init(size_);
+		if (shuffle_restore_val > 0)
+		{
+			if (shuffle_restore_val - initial_ >= size_)
+			{
+				LOG(ERROR) << _("Wrong restore value.");
+				return 0;
+			}
+			addr->sin_addr.s_addr = htonl(shuffle_restore_val);
+			shuffle_.RestoreVal(size_, shuffle_restore_val - initial_);
+			shift_to_next_host(addr, faddr);
+		}
+		else
+		{
+			shuffle_.Init(size_);
+		}
 	}
 	else
 	{

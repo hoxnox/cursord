@@ -17,7 +17,9 @@ class IPv4Generator
 	public:
 		IPv4Generator(const bool repeat,
 		              const bool mix = false);
-		int init(const char * init, const size_t initsz, char * state, const size_t &statesz);
+		int init(const char * init, const size_t initsz,
+		         char * state, const size_t &statesz,
+			 const uint32_t shuffle_restore_val = 0);
 		~IPv4Generator();
 
 		IPv4Generator& operator()(char* state, size_t* statesz, size_t statemaxsz,
@@ -30,6 +32,7 @@ class IPv4Generator
 		int next              (uint32_t &curr, const uint32_t final);
 		int shift_to_next_host(struct sockaddr_in* addr, const struct sockaddr_in* faddr);
 		int shift_bad_addr    (struct sockaddr_in* addr, const struct sockaddr_in* faddr);
+		bool initialized() { return size_ > 0; }
 		bool repeat_;
 		bool mix_;
 

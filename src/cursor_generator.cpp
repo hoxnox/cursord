@@ -147,6 +147,7 @@ inline long max(const long lhv, const long rhv)
 void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 {
 	bool mix = false, priv = false;
+	uint32_t restore = 0;
 	state_   = (char *)malloc(statemaxsz_);
 	memset(state_, 0, statemaxsz_);
 	nextbuf_ = (char *)malloc(nextbufmaxsz_);
@@ -182,6 +183,11 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 			if(tmp.toLower() != L"false" && tmp.toLower() != L"0")
 				mix = true;
 		}
+		else if(arg->first == "restore")
+		{
+			restore = ntohl(inet_addr(arg->second.toASCII().c_str()));
+			mix = true;
+		}
 		else if(arg->first == "name")
 		{
 			name_ = tmp.toLower();
@@ -211,7 +217,7 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
                 IPv4Generator gipv4(repeat_, mix);
 		if(priv)
 			gipv4.SetSkipPrivate(false);
-		statesz_ = gipv4.init(state_, statesz_, state_, statemaxsz_);
+		statesz_ = gipv4.init(state_, statesz_, state_, statemaxsz_, restore);
 		generator = gipv4;
 	}
 	else
