@@ -218,6 +218,8 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 		if(priv)
 			gipv4.SetSkipPrivate(false);
 		statesz_ = gipv4.init(state_, statesz_, state_, statemaxsz_, restore);
+		if (shared_ && restore != 0)
+			do_next_fake_count_ = shared_curr_ - 1;
 		generator = gipv4;
 	}
 	else
@@ -229,6 +231,7 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 
 CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args args)
 	: Cursor(addr)
+	, do_next_fake_count_(0)
 	, nextbufsz_(0)
 	, nextbufmaxsz_(2048)
 	, statesz_(0)
@@ -243,6 +246,7 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args args,
                                  const size_t shared_curr, const size_t shared_total)
 	: Cursor(addr, shared_curr, shared_total)
+	, do_next_fake_count_(0)
 	, nextbufsz_(0)
 	, nextbufmaxsz_(2048)
 	, statesz_(0)
@@ -268,12 +272,20 @@ int CursorGenerator::do_next(const size_t count, std::deque<nx::String>& buf)
 	size_t i = 0;
 	for(; i < count; ++i)
 	{
-		generator(state_, &statesz_, statemaxsz_,
-		          nextbuf_, &nextbufsz_, nextbufmaxsz_,
-		          repeat_);
-		if(nextbufsz_ == 0)
-			break;
-		buf.push_back(nx::String(nextbuf_, nextbuf_ + nextbufsz_));
+		if (do_next_fake_count_ == 0)
+		{
+			generator(state_, &statesz_, statemaxsz_,
+			          nextbuf_, &nextbufsz_, nextbufmaxsz_,
+			          repeat_);
+			if(nextbufsz_ == 0)
+				break;
+			buf.push_back(nx::String(nextbuf_, nextbuf_ + nextbufsz_));
+		}
+		else
+		{
+			buf.push_back(nx::String::fromASCII("FAKE"));
+			--do_next_fake_count_;
+		}
 	}
 	if(name_ == "ipv4" && !repeat_)
 	{

@@ -26,6 +26,7 @@ class CursorGenerator: public Cursor
 		void init(const Cursor::Sockaddr addr, const Cursor::Args args);
 		std::function<void(char *, size_t *, const size_t, char *, 
 		                   size_t *, const size_t, int)> generator;
+		size_t     do_next_fake_count_;
 		nx::String name_;
 		int        repeat_;
 		char*      nextbuf_;

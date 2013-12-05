@@ -104,7 +104,7 @@ IPv4Generator::init(const char * init, const size_t initsz,
 		size_ = i_faddr - i_addr;
 		if (shuffle_restore_val > 0)
 		{
-			if (shuffle_restore_val - initial_ >= size_)
+			if (shuffle_restore_val - initial_ > size_)
 			{
 				LOG(ERROR) << _("Wrong restore value.");
 				return 0;

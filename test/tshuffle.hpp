@@ -39,13 +39,13 @@ TEST_F(TShuffle, generate)
 {
 	sg->Init(9);
 	for(size_t i = 0; i < 9; ++i)
-		std::cout << sg->GetNext() << std::endl;
-		//EXPECT_EQ(sg->GetNext(), result_9[i]);
+		// std::cout << sg->GetNext() << std::endl;
+		EXPECT_EQ(sg->GetNext(), result_9[i]);
 	std::cout << std::endl;
 	sg->Init(100);
 	for(size_t i = 0; i < 100; ++i)
-		std::cout << sg->GetNext() << std::endl;
-		//EXPECT_EQ(sg->GetNext(), result_100[i]);
+		//std::cout << sg->GetNext() << std::endl;
+		EXPECT_EQ(sg->GetNext(), result_100[i]);
 	std::cout << std::endl;
 }
 
@@ -53,17 +53,19 @@ TEST_F(TShuffle, restore)
 {
 	sg->RestoreVal(100, 11);
 	for(size_t i = 40; i < 100; ++i)
-		std::cout << sg->GetNext() << std::endl;
-		//EXPECT_EQ(sg->GetNext(), result_100[i]);
+		//std::cout << sg->GetNext() << std::endl;
+		EXPECT_EQ(sg->GetNext(), result_100[i]);
 	sg->RestoreCnt(100, 40);
 	for(size_t i = 40; i < 100; ++i)
-		std::cout << sg->GetNext() << std::endl;
-		//EXPECT_EQ(sg->GetNext(), result_100[i]);
+		//std::cout << sg->GetNext() << std::endl;
+		EXPECT_EQ(sg->GetNext(), result_100[i]);
 }
 
 TEST_F(TShuffle, print)
 {
+	/*
 	sg->Init(4000000000UL);
 	for(size_t i = 0; i < 100; ++i)
 		std::cout << sg->GetNext() << std::endl;
+		*/
 }
