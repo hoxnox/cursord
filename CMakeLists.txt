@@ -61,7 +61,7 @@ endif()
 
 set(NX_SOCK_SRC ./src/nx_socket.h ./src/nx_socket.c)
 add_library(nx_socket STATIC ${NX_SOCK_SRC})
-list(APPEND LIBRARIES nx_socket)
+list(APPEND LIBRARIES nx_socket pthread rt)
 
 ##########################################################################
 # cursord
