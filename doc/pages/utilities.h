@@ -9,6 +9,6 @@ There are some utilities in the cursord package:
 - <b>`cursor-cli`</b> command line client to cursord. You can send `GET`,
   `STOP` and `SPEED` commands to the server. Answer will be printed to
   stdout.
-- <b>`utility`</b>
+- <b>`utility placeholder`</b>
 
 */

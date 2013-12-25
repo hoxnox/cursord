@@ -104,12 +104,31 @@ Crossplatform
 
 Well, we are using it on Linux with crossplatforming in mind.
 
+License
+=======
+
+Licensed under New BSD license.
+
 History
 =======
 
-2012-11-03
+2013-12-25
+----------
 
-Cursord 2.0: rewrite from scratch.
+1. For IPv4 generator you can restore cursord state after the server was
+   stopped, even if mix is used.
+2. Shared mode released. You can launch many independent copies of
+   cursord, which will be share the same info.
+3. Bugfixing
+4. Progressinfo added to log
+5. IPv4Range in file cursor feature released
+
+
+2013-02-08
+----------
+
+Generators changed, now using uint32 and ipv4. IPv4 generator can mix
+values.
 
 2012-11-01
 ----------
@@ -122,8 +141,8 @@ ROADMAP: Database engine rewrite to ODBC (unixODBC). Include custom
          generator support. Release clinet libraries for some popular
          languages.
 
-2013-02-08
+2012-10-01
 ----------
 
-Generators changed, now using uint32 and ipv4. IPv4 generator can mix
-values.
+Rewrite from scratch.
+

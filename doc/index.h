@@ -1,7 +1,7 @@
 ﻿////////////////////////////////////////////////////////////////////////////
 // index.h
 // Author: Merder Kim <hoxnox@gmail.com>
-// Licanse: Cursord license
+// Licanse: BSD License
 ////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -10,11 +10,11 @@
 @author Merder Kim <hoxnox@gmail.com>
 @date 20131225 15:48:29
 
-@mainpage cursord Курсор
+@mainpage cursord CURSORD
 
 @tableofcontents
 
-@section intro Введение
+@section intro Introduction
 
 Проект Курсор представляет собой демон (службу), распределяющий между
 клиентами общую информацию. Общей информацией могут выступать данные из
