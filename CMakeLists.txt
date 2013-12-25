@@ -1,6 +1,6 @@
-# @author $username$ <$usermail$>
-# @date $date$
-# @copyright $username$
+# @author Merder Kim <hoxnox@gmail.com>
+# @date 20131225 15:48:29
+# @copyright Merder Kim
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -96,8 +96,10 @@ set_target_properties(cursord PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c+
 # client
 
 set(SRC_CLI ./src/cursor-cli.cpp
-	./src/string.hpp
-	./src/string.cpp)
+            ./src/simpleudp.cpp
+	    ./src/simpleudp.hpp
+            ./src/string.hpp
+            ./src/string.cpp)
 add_executable(cursor-cli ${SRC_CLI})
 target_link_libraries(cursor-cli ${LIBRARIES})
 set_target_properties(cursor-cli PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP")

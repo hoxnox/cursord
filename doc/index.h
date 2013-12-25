@@ -1,14 +1,14 @@
 ﻿////////////////////////////////////////////////////////////////////////////
 // index.h
-// Author: $username$ <$usermail$>
+// Author: Merder Kim <hoxnox@gmail.com>
 // Licanse: Cursord license
 ////////////////////////////////////////////////////////////////////////////
 
 /**
 
 @image html main_logo.png
-@author $username$ <$usermail$>
-@date $date$
+@author Merder Kim <hoxnox@gmail.com>
+@date 20131225 15:48:29
 
 @mainpage cursord Курсор
 
@@ -37,5 +37,6 @@
 @li @subpage api
 @li @subpage cursor_types
 @li @subpage bench
+@li @subpage utilities
 
 */
