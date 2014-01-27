@@ -12,6 +12,7 @@ project(cursord2)
 option(WITHOUT_GLOG "Don't use google logging even it is in the system" OFF)
 option(WITHOUT_IPV4GEN "Don't build ipv4gen tool" ON)
 option(WITHOUT_ODBC "Don't build odbc dependent code" OFF)
+option(WITH_expand_ipv4rg "Build expand_ipv4rg utility" OFF)
 option(GENERATE_DOC "Don't generate docs" ON)
 
 
@@ -101,6 +102,28 @@ set(SRC_CLI ./src/cursor-cli.cpp
 add_executable(cursor-cli ${SRC_CLI})
 target_link_libraries(cursor-cli ${LIBRARIES})
 set_target_properties(cursor-cli PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP")
+
+###########################################################################
+# expand_ipv4rg
+
+if(WITH_expand_ipv4rg)
+	set(EXPAND_IPv4RG_SRC 
+		./src/string.hpp
+		./src/string.cpp
+		./src/cursor.hpp
+		./src/cursor.cpp
+		./src/cursor_file.hpp
+		./src/cursor_file.cpp
+		./src/ipv4_generator.hpp
+		./src/ipv4_generator.cpp
+		./src/shuffle.hpp
+		./src/shuffle.cpp
+		./src/speedometer.hpp
+		./src/speedometer.cpp
+		./misc/expand_ipv4rg.cpp)
+	add_executable(expand_ipv4rg ${EXPAND_IPv4RG_SRC})
+	target_link_libraries(expand_ipv4rg ${LIBRARIES})
+endif()
 
 ###########################################################################
 # ipv4gen

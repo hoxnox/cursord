@@ -6,6 +6,7 @@
 
 #include <cstring>
 #include <memory>
+#include <malloc.h>
 #include <limits>
 
 #include <gettext.h>
