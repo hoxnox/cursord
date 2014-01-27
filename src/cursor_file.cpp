@@ -98,7 +98,8 @@ void CursorFile::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 {
 	size_t init = 0;
 	nx::String ftype;
-	for(auto arg=args.begin(); arg != args.end(); ++arg )
+	for(std::map<nx::String, nx::String>::const_iterator arg=args.begin();
+			arg != args.end(); ++arg )
 	{
 		nx::String tmp = arg->second;
 		tmp.trim();
@@ -150,7 +151,7 @@ void CursorFile::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 #ifdef MSVC
 	file_.open(fname_, std::ios::binary);
 #else
-	file_.open(fname_.toUTF8(), std::ios::binary);
+	file_.open(fname_.toUTF8().c_str(), std::ios::binary);
 #endif
 	if(!file_.is_open())
 	{
