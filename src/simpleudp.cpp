@@ -6,6 +6,7 @@
 #include <gettext.h>
 #include <iostream>
 #include <cstring>
+#include <unistd.h>
 
 SimpleUDP::SimpleUDP(struct sockaddr* addr)
 	: sock_(INVALID_SOCKET)
