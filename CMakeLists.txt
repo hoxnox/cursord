@@ -4,7 +4,7 @@
 
 cmake_minimum_required(VERSION 2.6)
 
-project(cursord2)
+project(cursord)
 
 ###############################################################################
 # OPTIONS
@@ -208,3 +208,21 @@ if(GENERATE_DOC)
 		message(WARNING "Doxygen not found. Documentation wouldn't be ganarated")
 	endif()
 endif()
+
+###########################################################################
+# cpack
+
+INSTALL(TARGETS cursord cursor-cli DESTINATION bin)
+SET(CPACK_PACKAGE_NAME "cursord")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Cursord - is a common data source")
+SET(CPACK_PACKAGE_VENDOR "Merder Kim <hoxnox@gmail.com>")
+SET(CPACK_PACKAGE_CONTACT ${CPACK_PACKAGE_VENDOR})
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/README.markdown")
+SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
+SET(CPACK_PACKAGE_VERSION_MAJOR "2")
+SET(CPACK_PACKAGE_VERSION_MINOR "2")
+SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+SET(CPACK_STRIP_FILES TRUE)
+INCLUDE(CPack)
+
