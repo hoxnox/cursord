@@ -6,7 +6,6 @@
 #ifndef __IPV4_GENERATOR__
 #define __IPV4_GENERATOR__
 
-#include <nx_socket.h>
 #include <shuffle.hpp>
 #include <string>
 

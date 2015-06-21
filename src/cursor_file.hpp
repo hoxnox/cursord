@@ -20,14 +20,14 @@ class CursorFile : public Cursor
 			FTYPE_IPv4       = 1 << 1,
 			FTYPE_IPv4RANGES = 1 << 2
 		};
-		CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args,
+		CursorFile(const Cursor::Args args,
 		           const size_t shared_curr, const size_t shared_total);
-		CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args);
+		CursorFile(const Cursor::Args args);
 		~CursorFile();
 	protected:
 		virtual int do_next(const size_t count, std::deque<nx::String>& buf);
 	private:
-		void init(const Cursor::Sockaddr addr, const Cursor::Args args);
+		void init(const Cursor::Args args);
 		std::string getnext();
 		std::string getinfo(size_t info = 0);
 		size_t totalsz_;

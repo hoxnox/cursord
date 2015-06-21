@@ -11,22 +11,16 @@
 #include <iostream>
 #include <memory>
 
+#include <nanomsg/nn.h>
+#include <nanomsg/pair.h>
+
 #include <cursordconf.h>
 #include <string.hpp>
 #include <gettext.h>
-#include <nx_socket.h>
-#include <simpleudp.hpp>
 
 #include <logging.h>
 
 typedef struct sockaddr_storage Sockaddr;
-
-enum Command_t
-{
-	COMMAND_GET = 0,
-	COMMAND_STOP  = 1,
-	COMMAND_SPEED = 2
-};
 
 struct Config
 {
@@ -42,8 +36,8 @@ struct Config
 			          << " " << e.argId() << std::endl;
 		}
 	}
-	Command_t cmd;
-	Sockaddr  addr;
+	std::string cmd;
+	std::string url;
 private:
 	void init(int argc, char * argv[]);
 	Config() {} // disabled;
@@ -53,37 +47,21 @@ void
 Config::init(int argc, char * argv[])
 {
 	std::stringstream version;
-	version << CURSORD_VERSION_MAJOR << "." << CURSORD_VERSION_MINOR;
-	TCLAP::CmdLine cmd_line(_("Information distributor."), ' ', version.str());
+	version << CURSORD_VERSION_MAJOR
+	        << "." << CURSORD_VERSION_MINOR
+	        << "." << CURSORD_VERSION_PATCH;
+	TCLAP::CmdLine cmd_line(_("Cursord ver."), ' ', version.str());
 
 	TCLAP::ValueArg<std::string> arg_command(
 			"c", "command", _("Command to send."),
 			                 true, "speed", "string", cmd_line);
-	TCLAP::ValueArg<std::string> arg_address(
-			"H", "host", _("Cursor name/address."),
-			              false, "127.0.0.1", "string", cmd_line);
-	TCLAP::ValueArg<unsigned short> arg_port(
-			"P", "port", _("Cursor port."), false, 9553,
-			             "unsigned short", cmd_line);
-	cmd_line.parse( argc, argv );
-
-	std::string addr_str = arg_address.getValue();
-	memset(&addr, 0, sizeof(Sockaddr));
-	if( MakeSockaddr((sockaddr*)&addr, addr_str.c_str(), addr_str.length(),
-			htons(arg_port.getValue())) < 0 )
-	{
-		throw TCLAP::ArgException(_("Invalid host, or port"), "H");
-	}
-
-	nx::String cmd_s = nx::String::fromUTF8(
-			arg_command.getValue()).trim().toLower();
-	if (cmd_s == "get")
-		cmd = COMMAND_GET;
-	else if (cmd_s == "stop")
-		cmd = COMMAND_STOP;
-	else if (cmd_s == "speed")
-		cmd = COMMAND_SPEED;
-	else
+	TCLAP::ValueArg<std::string> arg_url(
+			"u", "url", _("Server url."),
+			              false, "ipc:///tmp/cursord.ipc", "string", cmd_line);
+	cmd_line.parse(argc, argv);
+	url = arg_url.getValue();
+	cmd = nx::String::fromUTF8(arg_command.getValue()).trim().toUpper().toASCII();
+	if (cmd != "GET" && cmd != "STOP" && cmd != "SPEED")
 		throw TCLAP::ArgException(_("Invalid command."), "c");
 }
 
@@ -91,21 +69,41 @@ int
 main(int argc, char* argv[])
 {
 	Config cfg(argc, argv);
-	SimpleUDP udp((struct sockaddr*)&(cfg.addr));
-	switch(cfg.cmd)
+	int sock = nn_socket (AF_SP, NN_PAIR);
+	if (sock < 0)
 	{
-		case COMMAND_GET:
-			if (udp.Send("GET") == 3)
-				std::cout << udp.Recv() << std::endl;
-			break;
-		case COMMAND_SPEED:
-			if (udp.Send("SPEED") == 5)
-				std::cout << udp.Recv() << std::endl;
-			break;
-		case COMMAND_STOP:
-			udp.Send("STOP");
-			break;
+		std::cerr << _("Error creating socket.")
+		          << _(" Message: ") << nn_strerror(errno);
+		return 1;
 	}
+	if (nn_connect(sock, cfg.url.c_str()) < 0)
+	{
+		std::cerr << _("Error connecting.")
+		          << _(" URL: ") << cfg.url
+		          << _(" Message: ") << nn_strerror(errno);
+		return 1;
+	}
+	if (nn_send(sock, cfg.cmd.c_str(), cfg.cmd.length(), 0) < 0)
+	{
+		std::cerr << _("Error sending data.")
+		          << _(" Message: ") << nn_strerror(errno);
+		return 1;
+	}
+	if (cfg.cmd != "STOP")
+	{
+		char* buf;
+		int bytes = nn_recv (sock, &buf, NN_MSG, 0);
+		if (bytes < 0)
+		{
+			std::cerr << _("Error receiving data.")
+			          << _(" URL: ") << cfg.url
+			          << _(" Message: ") << nn_strerror(errno);
+					  return 1;
+		}
+		std::cout << std::string(buf, buf + bytes) << std::endl;
+		nn_freemsg (buf);
+	}
+	nn_shutdown(sock, 0);
 	return 0;
 }
 

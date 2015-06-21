@@ -12,7 +12,6 @@
 #include <memory>
 
 #include <cursordconf.h>
-#include <nx_socket.h>
 #include <string.hpp>
 #include <gettext.h>
 #include <cursor.hpp>
@@ -77,7 +76,7 @@ Args parse_args(const String args)
 
 void RunCursor(const std::string type,
                const Args& args,
-               const Sockaddr& addr,
+               const char* url,
                const size_t shared_curr,
                const size_t shared_total)
 {
@@ -88,31 +87,31 @@ void RunCursor(const std::string type,
 	if(type == "generator")
 	{
 		if(shared)
-			curs = new CursorGenerator(addr, args, shared_curr, shared_total);
+			curs = new CursorGenerator(args, shared_curr, shared_total);
 		else
-			curs = new CursorGenerator(addr, args);
+			curs = new CursorGenerator(args);
 	}
 
 	else if(type == "file")
 	{
 		if(shared)
-			curs = new CursorFile(addr, args, shared_curr, shared_total);
+			curs = new CursorFile(args, shared_curr, shared_total);
 		else
-			curs = new CursorFile(addr, args);
+			curs = new CursorFile(args);
 	}
 
 #ifndef CFG_WITHOUT_ODBC
 	else if(type == "odbc")
 	{
 		if(shared)
-			curs = new CursorODBC(addr, args, shared_curr, shared_total);
+			curs = new CursorODBC(args, shared_curr, shared_total);
 		else
-			curs = new CursorODBC(addr, args);
+			curs = new CursorODBC(args);
 	}
 #endif // CFG_WITHOUT_ODBC
 	else
 		throw TCLAP::ArgException(_("Unknown cursor type"), "t");
-	curs->Run();
+	curs->Run(url);
 	delete curs;
 	return;
 }
@@ -121,9 +120,11 @@ int main(int argc, char * argv[])
 {
 	try
 	{
-		std::stringstream CURSORD_VERSION_STR;
-		CURSORD_VERSION_STR << CURSORD_VERSION_MAJOR << "." << CURSORD_VERSION_MINOR;
-		TCLAP::CmdLine cmd(_("no description yet"), ' ', CURSORD_VERSION_STR.str());
+		std::stringstream version;
+		version << CURSORD_VERSION_MAJOR
+		        << "." << CURSORD_VERSION_MINOR
+		        << "." << CURSORD_VERSION_PATCH;
+		TCLAP::CmdLine cmd(_("Cursord ver."), ' ', version.str());
 
 		TCLAP::ValueArg<std::string> arg_type(
 			"t", "type", _("Cursor type. Valid types are: generator, file, odbc"),
@@ -138,26 +139,17 @@ int main(int argc, char * argv[])
 				"Each argument has the following format: <name>=<value>."
 				"Arguments splitted by ';'."), 
 				false, "", "string", cmd);
-		TCLAP::ValueArg<std::string> arg_address(
-				"H", "host", _("Server address"), false, "127.0.0.1", "string", cmd);
-		TCLAP::ValueArg<unsigned short> arg_port(
-				"P", "port", _("Server port"), false, 9553, "unsigned short", cmd);
+		TCLAP::ValueArg<std::string> arg_url(
+				"u", "url", _("Server url"),
+				false, "ipc:///tmp/cursord.ipc", "string", cmd);
 
-		cmd.parse( argc, argv );
-		Args args = parse_args(
-				String::fromUTF8(arg_arg.getValue()));
-		std::string addr_str = arg_address.getValue();
-		Sockaddr addr;
-		memset(&addr, 0, sizeof(Sockaddr));
-		if( MakeSockaddr((struct sockaddr*)&addr, addr_str.c_str(), addr_str.length(), 
-				htons(arg_port.getValue())) < 0 )
-		{
-			throw TCLAP::ArgException(_("Invalid host, or port"), "H");
-		}
+		cmd.parse(argc, argv);
+		Args args = parse_args(String::fromUTF8(arg_arg.getValue()));
+		std::string url = arg_url.getValue();
 		size_t shared_curr = 0;
 		size_t shared_total = 0;
 		parse_shared(arg_shared.getValue(), shared_curr, shared_total);
-		RunCursor(arg_type.getValue(), args, addr, shared_curr, shared_total);
+		RunCursor(arg_type.getValue(), args, url.c_str(), shared_curr, shared_total);
 	}
 	catch(TCLAP::ArgException &e)
 	{
