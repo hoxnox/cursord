@@ -18,7 +18,8 @@ class CursorFile : public Cursor
 		{
 			FTYPE_TEXT       = 0,
 			FTYPE_IPv4       = 1 << 1,
-			FTYPE_IPv4RANGES = 1 << 2
+			FTYPE_IPv4RANGES = 1 << 2,
+			FTYPE_CIDR       = 1 << 3
 		};
 		CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args,
 		           const size_t shared_curr, const size_t shared_total);
@@ -28,6 +29,7 @@ class CursorFile : public Cursor
 		virtual int do_next(const size_t count, std::deque<nx::String>& buf);
 	private:
 		void init(const Cursor::Sockaddr addr, const Cursor::Args args);
+		bool init_ipv4gen(uint32_t ip_low, uint32_t ip_hi);
 		std::string getnext();
 		std::string getinfo(size_t info = 0);
 		size_t totalsz_;

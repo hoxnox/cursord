@@ -14,6 +14,7 @@ option(WITHOUT_IPV4GEN "Don't build ipv4gen tool" ON)
 option(WITHOUT_ODBC "Don't build odbc dependent code" OFF)
 option(WITH_expand_ipv4rg "Build expand_ipv4rg utility" OFF)
 option(GENERATE_DOC "Don't generate docs" ON)
+option(WITH_TESTS "Build tests" OFF)
 
 
 ###############################################################################
@@ -78,6 +79,8 @@ set(SRC ./src/cursord.cpp
 	./src/ipv4_generator.cpp
 	./src/cursor_file.hpp
 	./src/cursor_file.cpp
+	./src/ipv4.hpp
+	./src/ipv4.cpp
 	./src/shuffle.hpp
 	./src/shuffle.cpp
 	./src/speedometer.hpp
@@ -116,6 +119,8 @@ if(WITH_expand_ipv4rg)
 		./src/cursor.cpp
 		./src/cursor_file.hpp
 		./src/cursor_file.cpp
+		./src/ipv4.hpp
+		./src/ipv4.cpp
 		./src/ipv4_generator.hpp
 		./src/ipv4_generator.cpp
 		./src/shuffle.hpp
@@ -160,11 +165,13 @@ endif()
 ##########################################################################
 # tests
 
-if( BUILD_TESTS )
+if( WITH_TESTS )
 	set(SOURCES_TEST
 		./test/tshuffle.hpp
 		./src/shuffle.hpp
 		./src/shuffle.cpp
+		./src/ipv4.cpp
+		./src/ipv4.hpp
 		./test/test.cpp
 	)
 	if(BUILD_GTEST)
@@ -190,9 +197,9 @@ if( BUILD_TESTS )
 	endif(BUILD_GTEST)
 	set_target_properties("${TEST}" PROPERTIES
 		COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x")
-else( BUILD_TESTS )
+else( WITH_TESTS )
 	message(STATUS "Tests disabled. Use -DBUILD_TESTS=TRUE to enable it.")
-endif( BUILD_TESTS )
+endif( WITH_TESTS )
 
 ###########################################################################
 # docs
