@@ -4,7 +4,7 @@
 
 cmake_minimum_required(VERSION 2.6)
 
-project(cursord2)
+project(cursord)
 
 ###############################################################################
 # OPTIONS
@@ -15,6 +15,7 @@ option(WITHOUT_ODBC "Don't build odbc dependent code" OFF)
 option(WITH_SYSTEM_NANOMSG "Use system nanomsg" OFF)
 option(WITH_expand_ipv4rg "Build expand_ipv4rg utility" OFF)
 option(GENERATE_DOC "Don't generate docs" ON)
+option(WITH_TESTS "Build tests" OFF)
 
 
 ###############################################################################
@@ -99,6 +100,8 @@ set(SRC ./src/cursord.cpp
 	./src/ipv4_generator.cpp
 	./src/cursor_file.hpp
 	./src/cursor_file.cpp
+	./src/ipv4.hpp
+	./src/ipv4.cpp
 	./src/shuffle.hpp
 	./src/shuffle.cpp
 	./src/speedometer.hpp
@@ -137,6 +140,8 @@ if(WITH_expand_ipv4rg)
 		./src/cursor.cpp
 		./src/cursor_file.hpp
 		./src/cursor_file.cpp
+		./src/ipv4.hpp
+		./src/ipv4.cpp
 		./src/ipv4_generator.hpp
 		./src/ipv4_generator.cpp
 		./src/shuffle.hpp
@@ -180,11 +185,13 @@ endif()
 ##########################################################################
 # tests
 
-if( BUILD_TESTS )
+if( WITH_TESTS )
 	set(SOURCES_TEST
 		./test/tshuffle.hpp
 		./src/shuffle.hpp
 		./src/shuffle.cpp
+		./src/ipv4.cpp
+		./src/ipv4.hpp
 		./test/test.cpp
 	)
 	if(BUILD_GTEST)
@@ -210,9 +217,9 @@ if( BUILD_TESTS )
 	endif(BUILD_GTEST)
 	set_target_properties("${TEST}" PROPERTIES
 		COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x")
-else( BUILD_TESTS )
+else( WITH_TESTS )
 	message(STATUS "Tests disabled. Use -DBUILD_TESTS=TRUE to enable it.")
-endif( BUILD_TESTS )
+endif( WITH_TESTS )
 
 ###########################################################################
 # docs
@@ -228,3 +235,23 @@ if(GENERATE_DOC)
 		message(WARNING "Doxygen not found. Documentation wouldn't be ganarated")
 	endif()
 endif()
+
+###########################################################################
+# cpack
+
+INSTALL(TARGETS cursord cursor-cli DESTINATION bin)
+SET(CPACK_PACKAGE_NAME "cursord")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Cursord - is a common data source")
+SET(CPACK_PACKAGE_VENDOR "Merder Kim <hoxnox@gmail.com>")
+SET(CPACK_PACKAGE_CONTACT ${CPACK_PACKAGE_VENDOR})
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/README.markdown")
+SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
+SET(CPACK_PACKAGE_VERSION_MAJOR "2")
+SET(CPACK_PACKAGE_VERSION_MINOR "2")
+SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+SET(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
+SET(CPACK_RPM_PACKAGE_LICENSE "MIT")
+SET(CPACK_STRIP_FILES TRUE)
+INCLUDE(CPack)
+
