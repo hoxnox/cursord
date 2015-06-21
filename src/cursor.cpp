@@ -11,6 +11,7 @@
 #include <ctime>
 #include <iomanip>
 #include <limits>
+#include <unistd.h>
 
 namespace cursor
 {
