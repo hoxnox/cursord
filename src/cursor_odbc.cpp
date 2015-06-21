@@ -6,8 +6,8 @@
 
 namespace cursor { 
 
-CursorODBC::CursorODBC(const Cursor::Sockaddr addr, const Cursor::Args args)
-	: Cursor(addr)
+CursorODBC::CursorODBC(const Cursor::Args args)
+	: Cursor()
 {
 }
 

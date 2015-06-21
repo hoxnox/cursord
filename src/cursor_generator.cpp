@@ -8,6 +8,10 @@
 #include <cstring>
 #include <typeinfo>
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 namespace cursor {
 
 /**@var CursorGenerator::generator
@@ -144,7 +148,7 @@ inline long max(const long lhv, const long rhv)
 	return lhv > rhv ? lhv : rhv;
 }
 
-void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
+void CursorGenerator::init(const Cursor::Args args)
 {
 	bool mix = false, priv = false;
 	uint32_t restore = 0;
@@ -229,8 +233,8 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 	}
 }
 
-CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args args)
-	: Cursor(addr)
+CursorGenerator::CursorGenerator(const Cursor::Args args)
+	: Cursor()
 	, do_next_fake_count_(0)
 	, nextbufsz_(0)
 	, nextbufmaxsz_(2048)
@@ -239,13 +243,13 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 	, generator(NULL)
 	, repeat_(0)
 {
-	init(addr, args);
+	init(args);
 }
 
 
-CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args args,
+CursorGenerator::CursorGenerator(const Cursor::Args args,
                                  const size_t shared_curr, const size_t shared_total)
-	: Cursor(addr, shared_curr, shared_total)
+	: Cursor(shared_curr, shared_total)
 	, do_next_fake_count_(0)
 	, nextbufsz_(0)
 	, nextbufmaxsz_(2048)
@@ -254,7 +258,7 @@ CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args
 	, generator(NULL)
 	, repeat_(0)
 {
-	init(addr, args);
+	init(args);
 }
 
 CursorGenerator::~CursorGenerator()

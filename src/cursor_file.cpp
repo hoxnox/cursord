@@ -6,6 +6,9 @@
 
 namespace cursor {
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
 std::string CursorFile::getinfo(size_t init /*=""*/)
 {
 	std::stringstream info;
@@ -67,8 +70,8 @@ size_t getFileSz(std::ifstream& file, CursorFile::FileTypes type)
 	return result;
 }
 
-CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args)
-	: Cursor(addr)
+CursorFile::CursorFile(const Cursor::Args args)
+	: Cursor()
 	, repeat_(false)
 	, ftype_(FTYPE_TEXT)
 	, ipv4gen_(false)
@@ -77,12 +80,12 @@ CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args)
 	, totalsz_(0)
 	, passedsz_(0)
 {
-	init(addr, args);
+	init(args);
 }
 
-CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args,
+CursorFile::CursorFile(const Cursor::Args args,
                        const size_t shared_curr, const size_t shared_total)
-	: Cursor(addr, shared_curr, shared_total)
+	: Cursor(shared_curr, shared_total)
 	, repeat_(false)
 	, ftype_(FTYPE_TEXT)
 	, ipv4gen_(false)
@@ -91,10 +94,10 @@ CursorFile::CursorFile(const Cursor::Sockaddr addr, const Cursor::Args args,
 	, totalsz_(0)
 	, passedsz_(0)
 {
-	init(addr, args);
+	init(args);
 }
 
-void CursorFile::init(const Cursor::Sockaddr addr, const Cursor::Args args)
+void CursorFile::init(const Cursor::Args args)
 {
 	size_t init = 0;
 	nx::String ftype;

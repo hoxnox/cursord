@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <error.h>
-#include <nx_socket.h>
+#include <arpa/inet.h>
 
 int main(int argc, char * argv[])
 {

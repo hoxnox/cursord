@@ -3,11 +3,18 @@
 #include <logging.h>
 #include <cstdio>
 #include <cstdlib>
-#include <nx_socket.h>
 #include <memory.h>
-#include <stdlib.h>
 
 namespace cursor {
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <unistd.h>
 
 IPv4Generator::IPv4Generator(const bool repeat,
                              const bool mix /*= false*/)
@@ -36,7 +43,7 @@ IPv4Generator::init(const char * init, const size_t initsz,
 		state = NULL;
 		return 0;
 	}
-	if(statesz < sizeof(sockaddr_in) + 1 + sizeof(sockaddr_in))
+	if (statesz < sizeof(sockaddr_in) + 1 + sizeof(sockaddr_in))
  	{
 		LOG(ERROR) << _("IPv4Generator: state buffer is too short on init.");
 		return -2;
@@ -167,6 +174,129 @@ int IPv4Generator::next(uint32_t &curr, const uint32_t final)
 		}
 	}
 	return 0;
+}
+
+typedef enum {
+	IPv4_NETTYPE_A         = 1,
+	IPv4_NETTYPE_B         = 2,
+	IPv4_NETTYPE_C         = 3,
+	IPv4_NETTYPE_LOCAL     = 4,
+	IPv4_NETTYPE_UNKNOWN   = 0
+} IPv4NetType;
+
+typedef enum {
+	IPv4_ADDRTYPE_RESERVED       = 1,
+	IPv4_ADDRTYPE_BROADCAST      = 2,
+	IPv4_ADDRTYPE_HOST           = 3,
+	IPv4_ADDRTYPE_HOST_PRIVATE   = 4,
+	IPv4_ADDRTYPE_NET            = 5,
+	IPv4_ADDRTYPE_NET_PRIVATE    = 6,
+	IPv4_ADDRTYPE_UNKNOWN        = 0
+} IPv4AddrType;
+
+typedef struct
+{
+	IPv4NetType  net_type;
+	IPv4AddrType addr_type;
+} IPv4Info;
+
+/**@brief get ipv4 type
+ * @param ip - uint32_t ip representation in network byte order*/
+IPv4Info GetIPv4Info(const uint32_t ip)
+{
+	IPv4Info result;
+	uint32_t hostip = ntohl(ip);
+	uint32_t netid = 0, hostid = 0;
+	int priv = 0;
+
+	const uint32_t b1000 = (uint32_t)1  << 31; // 10000000 00000000 00000000 00000000
+	const uint32_t b1100 = (uint32_t)3  << 30; // 11000000 00000000 00000000 00000000 
+	const uint32_t b1110 = (uint32_t)7  << 29; // 11100000 00000000 00000000 00000000 
+	const uint32_t b1111 = (uint32_t)15 << 28; // 11110000 00000000 00000000 00000000 
+
+	const uint32_t anetmask  = (uint32_t)0x7f000000; // 01111111 00000000 00000000 00000000
+	const uint32_t ahostmask = (uint32_t)0x00ffffff; // 00000000 11111111 11111111 11111111
+	const uint32_t bnetmask  = (uint32_t)0x3fff0000; // 00111111 11111111 00000000 00000000
+	const uint32_t bhostmask = (uint32_t)0x0000ffff; // 00000000 00000000 11111111 11111111
+	const uint8_t  b1st_private = (uint8_t)0x3f & (uint8_t)172;  // 1-st byte of net id for private B networks
+	const uint32_t cnetmask  = (uint32_t)0x1fffff00; // 00011111 11111111 11111111 00000000
+	const uint32_t chostmask = (uint32_t)0x000000ff; // 00000000 00000000 00000000 11111111
+	const uint8_t  c1st_private = (uint8_t)0x1f & (uint8_t)192; // 1-st byte of net id for private C networks
+
+	result.net_type = IPv4_NETTYPE_UNKNOWN;
+	result.addr_type = IPv4_ADDRTYPE_UNKNOWN; 
+	
+	if( (hostip & b1111) == b1110 )
+	{
+		result.addr_type = IPv4_ADDRTYPE_BROADCAST;
+		return result;
+	}
+	if( (hostip & b1111) == b1111 )
+	{
+		result.addr_type = IPv4_ADDRTYPE_RESERVED;
+		return result;
+	}
+
+	if((hostip & b1000) == 0)
+	{
+		netid  = (hostip & anetmask)/0x1000000;
+		if(netid == 0)
+			return result;
+		hostid = (hostip & ahostmask);
+		if( (hostip & anetmask) == anetmask )
+			result.net_type = IPv4_NETTYPE_LOCAL;
+		else
+			result.net_type = IPv4_NETTYPE_A;
+		if( hostid == ahostmask )
+		{
+			result.addr_type = IPv4_ADDRTYPE_BROADCAST;
+			return result;
+		}
+		if(netid == 10)
+			priv = 1;
+	}
+	else if((hostip & b1100) == b1000)
+	{
+		result.net_type = IPv4_NETTYPE_B;
+		netid  = (hostip & bnetmask)/0x10000;
+		hostid = (hostip & bhostmask);
+		if( hostid == bhostmask )
+		{
+			result.addr_type = IPv4_ADDRTYPE_BROADCAST;
+			return result;
+		}
+		if(  netid/0x100 == b1st_private && 16 <= netid%0x100 && netid%0x100 <= 31)
+			priv = 1;
+	}
+	else if((hostip & b1110) == b1100)
+	{
+		result.net_type = IPv4_NETTYPE_C;
+		netid  = (hostip & cnetmask);
+		netid = netid/0x100;
+		hostid = (hostip & chostmask);
+		if( hostid == chostmask )
+		{
+			result.addr_type = IPv4_ADDRTYPE_BROADCAST;
+			return result;
+		}
+		if(  netid/0x10000 == c1st_private && (netid%0x10000)/0x100 == 0xa8 )
+			priv = 1;
+	}
+	if(hostid == 0)
+	{
+		if(priv)
+			result.addr_type = IPv4_ADDRTYPE_NET_PRIVATE;
+		else
+			result.addr_type = IPv4_ADDRTYPE_NET;
+	}
+	else
+	{
+		if(priv)
+			result.addr_type = IPv4_ADDRTYPE_HOST_PRIVATE;
+		else
+			result.addr_type = IPv4_ADDRTYPE_HOST;
+	}
+	return result;
 }
 
 /**@brief shift addr to first, which is HOST & NOT LOCAL & NOT UNKNONWN

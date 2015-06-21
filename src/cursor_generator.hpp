@@ -16,14 +16,14 @@ namespace cursor {
 class CursorGenerator: public Cursor
 {
 	public:
-		CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args args,
+		CursorGenerator(const Cursor::Args args,
 		           const size_t shared_curr, const size_t shared_total);
-		CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args args);
+		CursorGenerator(const Cursor::Args args);
 		~CursorGenerator();
 	protected:
 		virtual int do_next(const size_t count, std::deque<nx::String>& buf);
 	private:
-		void init(const Cursor::Sockaddr addr, const Cursor::Args args);
+		void init(const Cursor::Args args);
 		std::function<void(char *, size_t *, const size_t, char *, 
 		                   size_t *, const size_t, int)> generator;
 		size_t     do_next_fake_count_;
