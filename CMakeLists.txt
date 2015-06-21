@@ -66,7 +66,8 @@ else()
 	set(NANOMSG_LIBRARIES ${NANOMSG_ROOT}/lib/libnanomsg.a)
 	list(APPEND EXTERNAL_DEPS nanomsg)
 endif()
-list(APPEND LIBRARIES -lanl ${NANOMSG_LIBRARIES})
+include_directories(${NANOMSG_INCLUDE_DIR})
+list(APPEND LIBRARIES -lanl -lrt ${NANOMSG_LIBRARIES})
 
 ##########################################################################
 # glog
