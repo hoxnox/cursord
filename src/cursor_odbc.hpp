@@ -12,15 +12,15 @@ namespace cursor {
 class CursorODBC: public Cursor
 {
 	public:
-		CursorODBC(const Cursor::Sockaddr addr, const Cursor::Args args,
+		CursorODBC(const Cursor::Args args,
 		           const size_t shared_curr, const size_t shared_total)
-			: Cursor(addr)
+			: Cursor()
 		{ // TODO: 
 		};
-		CursorODBC(const Cursor::Sockaddr addr, const Cursor::Args args);
+		CursorODBC(const Cursor::Args args);
 		~CursorODBC();
 	protected:
-		virtual int Next(const size_t count, std::deque<nx::String>& buf);
+		virtual int do_next(const size_t count, std::deque<nx::String>& buf);
 };
 
 } // namespace

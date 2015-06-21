@@ -2,8 +2,10 @@
  * @date $date$
  * @copyright $username$*/
 
+#include <nanomsg/nn.h>
+#include <nanomsg/pair.h>
+
 #include "cursor.hpp"
-#include <nx_socket.h>
 
 #include <sstream>
 #include <ctime>
@@ -19,21 +21,30 @@ namespace cursor
  * Defines common interface to all Cursor classes and encapsulates all main
  * network operations.*/
 
-/**@brief constructor
- * @param addr Address to bind server.*/
-Cursor::Cursor(const Sockaddr addr)
+Cursor::Cursor()
 	: state_(0)
-	 ,recvbuf_(NULL)
-	 ,recvbufsz_(2000)
-	 ,bufsz_(1000)
+	, bufsz_(1000)
+	, shared_(false)
+	, shared_curr_(0)
+	, shared_total_(0)
 {
-	timeout_.tv_sec = 30;
-	timeout_.tv_usec = 0;
-	recvbuf_ = (char *)malloc(recvbufsz_);
-	memset(recvbuf_, 0, recvbufsz_);
-	memset(&laddr_, 0, sizeof(Sockaddr));
-	memcpy(&laddr_, &addr, sizeof(Sockaddr));
 }
+
+Cursor::Cursor(const size_t shared_curr, const size_t shared_total)
+	: state_(0)
+	, bufsz_(1000)
+	, shared_(true)
+	, shared_curr_(shared_curr)
+	, shared_total_(shared_total)
+{
+	if(shared_total_ < shared_curr_ || shared_curr_ == 0 || shared_total_ == 0)
+	{
+		shared_ = false;
+		shared_curr_ = 0;
+		shared_total_ = 0;
+	}
+}
+
 
 Cursor::~Cursor()
 {
@@ -41,109 +52,70 @@ Cursor::~Cursor()
 		LOG(INFO) << _("Cursor destruction: Buffer is empty.");
 	else
 		LOG(INFO) << _("Cursor destruction: ") << buf_.front();
-
-	if(recvbuf_)
-		free(recvbuf_);
-}
-
-inline SOCKET init_socket(Cursor::Sockaddr& laddr)
-{
-	SOCKET sock = socket(laddr.ss_family, SOCK_DGRAM, 0);
-	if(!IS_VALID_SOCK(sock))
-	{
-		LOG(ERROR) << _("Error socket initialization.") << " "
-			<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
-		return INVALID_SOCKET;
-	}
-	if(SetNonBlock(sock) < 0)
-	{
-		LOG(ERROR) << _("Error switching socket to non-block mode.") << " "
-			<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
-		close(sock);
-		return INVALID_SOCKET;
-	}
-	if(SetReusable(sock) < 0)
-	{
-		LOG(ERROR) << _("Error making socket reusable") << " "
-			<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
-		close(sock);
-		return INVALID_SOCKET;
-	}
-	if( bind(sock, (sockaddr*)&laddr, sizeof(Cursor::Sockaddr)) < 0 )
-	{
-		LOG(ERROR) << _("Error binding docket.") << " "
-			<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
-		close(sock);
-		return INVALID_SOCKET;
-	}
-	return sock;
 }
 
 /**@brief Start cursor server*/
-void Cursor::Run()
+void Cursor::Run(const char * url)
 {
-	const int tmpsz = 50;
-	char * tmp = (char *)malloc(tmpsz);
-	memset(tmp, 0, tmpsz);
-	if(inet_ntop(laddr_.ss_family, GetAddr((sockaddr*)&laddr_), tmp, tmpsz) == NULL)
+	int sock = nn_socket(AF_SP, NN_PAIR);
+	if (sock < 0)
 	{
-		LOG(ERROR) << _("Wrong address.") << " "
-			<< _("Message") << ": " << strerror(errno);
+		LOG(ERROR) << _("Error creating socket.")
+		           << _(" Message: ") << nn_strerror(errno);
 		return;
 	}
-	SOCKET sock = init_socket(laddr_);
-	if( !IS_VALID_SOCK(sock) )
+	if (nn_bind(sock, url) < 0)
+	{
+		LOG(ERROR) << _("Error binding socket.")
+		           << _(" Message: ") << nn_strerror(errno);
 		return;
-
-	LOG(INFO) << _("Starting cursor.") << " " << _("Address") << ": " << tmp << " "
-		<< _("port") << ": " << ntohs(GetPort((sockaddr*)&laddr_));
+	}
+	LOG(INFO) << _("Starting cursor.") << _(" URL: ") << url;
 
 	while( true )
 	{
-		int rs = 0;
-		fd_set rfds;
-
-		FD_ZERO(&rfds);
-		FD_SET(sock, &rfds);
-
-		struct timeval tm = timeout_;
-
-		rs = select(sock + 1, &rfds, NULL, NULL, &tm);
-		if(rs == 0)
+		struct nn_pollfd pfd[1];
+		pfd[0].fd = sock;
+		pfd[0].events = NN_POLLIN;
+		int rs = nn_poll (pfd, 1, 1000);
+		if (rs == 0)
 		{
 			if(state_ & STATE_STOP)
+			{
+				nn_shutdown(sock, 0);
 				break;
+			}
 			continue;
 		}
-		if(rs < 0)
+		if (rs == -1)
 		{
-			if( ( rs = GET_LAST_SOCK_ERROR() ) != EINTR ) // не просто прерывание
+			if (rs != EINTR)
 			{
-				LOG(ERROR) << _("Error calling select") << " "
-					<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
+				LOG(ERROR) << _("Error calling select.")
+				           << _(" Message: ") << nn_strerror(errno);
 				state_ = STATE_STOP | STATE_ERROR;
 			}
 			continue;
 		}
-		if(!FD_ISSET(sock, &rfds))
+		if (!(pfd[0].revents & NN_POLLIN))
 		{
 			LOG(ERROR) << _("Select returned positive, but sock is not in rfds.");
-			state_ = STATE_STOP | STATE_ERROR;
 			continue;
 		}
-		Sockaddr raddr;
-		socklen_t raddrln = sizeof(raddr);
-		memset(recvbuf_, 0, recvbufsz_);
-		int rs_ = recvfrom(sock, recvbuf_, recvbufsz_ - 1, 0, (sockaddr*)&raddr, &raddrln);
-		if(rs_ < 0)
+		char *buf = NULL;
+		int bufsz = nn_recv (sock, &buf, NN_MSG, 0);
+		if (bufsz < 0)
 		{
-			LOG(ERROR) << _("Error receiving data.") << " "
-				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
+			LOG(ERROR) << _("Error data receiving.")
+			           << _(" Message: ") << nn_strerror(errno);
 			state_ = STATE_STOP | STATE_ERROR;
+			nn_freemsg (buf);
+			continue;
 		}
 
-
-		nx::String request = nx::String::fromUTF8(recvbuf_).trim().toLower();
+		nx::String request = nx::String::fromUTF8(
+				std::string(buf, buf + bufsz)).trim().toLower();
+		nn_freemsg (buf);
 		nx::String reply;
 		if(request == "speed")
 		{
@@ -193,15 +165,35 @@ void Cursor::Run()
 			continue;
 		}
 		std::string reply_utf8 = reply.toUTF8();
-		rs_ = sendto(sock, reply_utf8.data(), reply.length(), 0,
-				(sockaddr*)&raddr, raddrln);
-		if(rs_ < 0)
+		rs = nn_send(sock, reply_utf8.c_str(), reply_utf8.length(), 0);
+		if(rs < 0)
 		{
-			LOG(ERROR) << _("Error sending data.") << " "
-				<< _("Message") << ": " << strerror(GET_LAST_SOCK_ERROR());
+			LOG(ERROR) << _("Error sending reply.")
+			           << _(" Message: ") << nn_strerror(errno);
 			state_ = STATE_STOP | STATE_ERROR;
 		}
 	}
+}
+
+int Cursor::Next(const size_t count, std::deque<nx::String>& buf)
+{
+	int rs;
+	if(shared_)
+	{
+		std::deque<nx::String> tmpbuf;
+		rs = do_next(count * shared_total_, tmpbuf);
+		if(rs >= 0)
+			for(size_t i = 0, j = shared_curr_ - 1; i < count && j < tmpbuf.size(); 
+					++i, j = shared_curr_ - 1 + shared_total_*i )
+			{
+				buf.push_back(tmpbuf[j]);
+			}
+	}
+	else
+	{
+		rs = do_next(count, buf);
+	}
+	return rs;
 }
 
 } //namespace

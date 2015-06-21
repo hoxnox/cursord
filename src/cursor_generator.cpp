@@ -8,6 +8,10 @@
 #include <cstring>
 #include <typeinfo>
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 namespace cursor {
 
 /**@var CursorGenerator::generator
@@ -144,9 +148,10 @@ inline long max(const long lhv, const long rhv)
 	return lhv > rhv ? lhv : rhv;
 }
 
-void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
+void CursorGenerator::init(const Cursor::Args args)
 {
 	bool mix = false, priv = false;
+	uint32_t restore = 0;
 	state_   = (char *)malloc(statemaxsz_);
 	memset(state_, 0, statemaxsz_);
 	nextbuf_ = (char *)malloc(nextbufmaxsz_);
@@ -155,15 +160,15 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 	{
 		nx::String tmp = arg->second;
 		tmp.trim();
-		if(arg->first == "repeat" && tmp.toLower() != L"false"
-				&& tmp.toLower() != L"0")
+		if(arg->first == "repeat")
 		{
-			repeat_ = 1;
+			if(tmp.toLower() != L"false" && tmp.toLower() != L"0")
+				repeat_ = 1;
 		}
-		else if(arg->first == "private" && tmp.toLower() != L"false"
-				&& tmp.toLower() != L"0")
+		else if(arg->first == "private")
 		{
-			priv = true;
+			if(tmp.toLower() != L"false" && tmp.toLower() != L"0")
+				priv = true;
 		}
 		else if(arg->first == "init")
 		{
@@ -177,9 +182,14 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 			memcpy(state_, init_utf8.data(), init_utf8.length());
 			statesz_ = init_utf8.length();
 		}
-		else if(arg->first == "mix" && tmp.toLower() != L"false"
-				&& tmp.toLower() != L"0")
+		else if(arg->first == "mix")
 		{
+			if(tmp.toLower() != L"false" && tmp.toLower() != L"0")
+				mix = true;
+		}
+		else if(arg->first == "restore")
+		{
+			restore = ntohl(inet_addr(arg->second.toASCII().c_str()));
 			mix = true;
 		}
 		else if(arg->first == "name")
@@ -211,7 +221,9 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
                 IPv4Generator gipv4(repeat_, mix);
 		if(priv)
 			gipv4.SetSkipPrivate(false);
-		statesz_ = gipv4.init(state_, statesz_, state_, statemaxsz_);
+		statesz_ = gipv4.init(state_, statesz_, state_, statemaxsz_, restore);
+		if (shared_ && restore != 0)
+			do_next_fake_count_ = shared_curr_ - 1;
 		generator = gipv4;
 	}
 	else
@@ -221,53 +233,32 @@ void CursorGenerator::init(const Cursor::Sockaddr addr, const Cursor::Args args)
 	}
 }
 
-CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args args)
-	: Cursor(addr)
+CursorGenerator::CursorGenerator(const Cursor::Args args)
+	: Cursor()
+	, do_next_fake_count_(0)
 	, nextbufsz_(0)
 	, nextbufmaxsz_(2048)
 	, statesz_(0)
 	, statemaxsz_(2048)
 	, generator(NULL)
 	, repeat_(0)
-	, shared_(false)
-	, shared_curr_(0)
-	, shared_total_(0)
 {
-	init(addr, args);
+	init(args);
 }
 
 
-CursorGenerator::CursorGenerator(const Cursor::Sockaddr addr, const Cursor::Args args,
+CursorGenerator::CursorGenerator(const Cursor::Args args,
                                  const size_t shared_curr, const size_t shared_total)
-	: Cursor(addr)
+	: Cursor(shared_curr, shared_total)
+	, do_next_fake_count_(0)
 	, nextbufsz_(0)
 	, nextbufmaxsz_(2048)
 	, statesz_(0)
 	, statemaxsz_(2048)
 	, generator(NULL)
 	, repeat_(0)
-	, shared_(true)
-	, shared_curr_(shared_curr)
-	, shared_total_(shared_total)
 {
-	init(addr, args);
-	if(shared_total_ < shared_curr_ || shared_curr_ == 0 || shared_total_ == 0)
-	{
-		shared_ = false;
-		shared_curr_ = 0;
-		shared_total_ = 0;
-	}
-	else
-	{
-		for(size_t i = 0; i < shared_curr_ - 1; ++i)
-		{
-			generator(state_, &statesz_, statemaxsz_,
-			          nextbuf_, &nextbufsz_, nextbufmaxsz_,
-			          repeat_);
-			if(nextbufsz_ == 0)
-				break;
-		}
-	}
+	init(args);
 }
 
 CursorGenerator::~CursorGenerator()
@@ -278,45 +269,35 @@ CursorGenerator::~CursorGenerator()
 		free(nextbuf_);
 }
 
-int CursorGenerator::Next(const size_t count, std::deque<nx::String>& buf)
+int CursorGenerator::do_next(const size_t count, std::deque<nx::String>& buf)
 {
 	if(generator == NULL)
 		return 0;
 	size_t i = 0;
 	for(; i < count; ++i)
 	{
-		generator(state_, &statesz_, statemaxsz_,
-		          nextbuf_, &nextbufsz_, nextbufmaxsz_,
-		          repeat_);
-		if(nextbufsz_ == 0)
-			break;
-		buf.push_back(nx::String(nextbuf_, nextbuf_ + nextbufsz_));
-		if(shared_)
+		if (do_next_fake_count_ == 0)
 		{
-			bool fail_flag = false;
-			for(size_t i = 0; i < shared_total_ - 1; ++i)
-			{
-				generator(state_, &statesz_, statemaxsz_,
-				          nextbuf_, &nextbufsz_, nextbufmaxsz_,
-				          repeat_);
-				if(nextbufsz_ == 0)
-				{
-					fail_flag = true;
-					break;
-				}
-			}
-			if(fail_flag)
+			generator(state_, &statesz_, statemaxsz_,
+			          nextbuf_, &nextbufsz_, nextbufmaxsz_,
+			          repeat_);
+			if(nextbufsz_ == 0)
 				break;
+			buf.push_back(nx::String(nextbuf_, nextbuf_ + nextbufsz_));
+		}
+		else
+		{
+			buf.push_back(nx::String::fromASCII("FAKE"));
+			--do_next_fake_count_;
 		}
 	}
-	if(name_ == "ipv4")
+	if(name_ == "ipv4" && !repeat_)
 	{
-
 		IPv4Generator * gen = generator.target<IPv4Generator>();
 		if(gen != NULL)
 		{
-			size_t sz = (shared_ ? gen->size()/shared_total_ : gen->size());
-			size_t ps = (shared_ ? gen->pos()/shared_total_ : gen->pos());
+			size_t sz = gen->size();
+			size_t ps = gen->pos();
 			int percent = ((float)ps / sz)*100;
 			LOG(INFO) << _("Progress") << ": " << ps << "/" << sz
 				<< " (" << percent << "%)";

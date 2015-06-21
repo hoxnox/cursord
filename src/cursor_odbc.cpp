@@ -6,8 +6,8 @@
 
 namespace cursor { 
 
-CursorODBC::CursorODBC(const Cursor::Sockaddr addr, const Cursor::Args args)
-	: Cursor(addr)
+CursorODBC::CursorODBC(const Cursor::Args args)
+	: Cursor()
 {
 }
 
@@ -15,7 +15,7 @@ CursorODBC::~CursorODBC()
 {
 }
 
-int CursorODBC::Next(const size_t count, std::deque<nx::String>& buf /*= buf_*/)
+int CursorODBC::do_next(const size_t count, std::deque<nx::String>& buf /*= buf_*/)
 {
 	return 0;
 }

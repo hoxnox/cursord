@@ -1,6 +1,6 @@
-# @author $username$ <$usermail$>
-# @date $date$
-# @copyright $username$
+# @author Merder Kim <hoxnox@gmail.com>
+# @date 20131225 15:48:29
+# @copyright Merder Kim
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -12,6 +12,8 @@ project(cursord2)
 option(WITHOUT_GLOG "Don't use google logging even it is in the system" OFF)
 option(WITHOUT_IPV4GEN "Don't build ipv4gen tool" ON)
 option(WITHOUT_ODBC "Don't build odbc dependent code" OFF)
+option(WITH_SYSTEM_NANOMSG "Use system nanomsg" OFF)
+option(WITH_expand_ipv4rg "Build expand_ipv4rg utility" OFF)
 option(GENERATE_DOC "Don't generate docs" ON)
 
 
@@ -20,23 +22,50 @@ option(GENERATE_DOC "Don't generate docs" ON)
 include("${PROJECT_SOURCE_DIR}/cmake/ext/nx_utils.cmake")
 nx_configure()
 
-set(CURSORD_VERSION_MAJOR 2)
-set(CURSORD_VERSION_MINOR 1)
+set(CURSORD_VERSION_MAJOR 3)
+set(CURSORD_VERSION_MINOR 0)
+set(CURSORD_VERSION_PATCH 0)
 # configuration header
 configure_file(
-	"${PROJECT_SOURCE_DIR}/cursord.cfg"
+	"${PROJECT_SOURCE_DIR}/src/cursord.cfg"
 	"${PROJECT_SOURCE_DIR}/src/cursordconf.h"
 	ESCAPE_QUOTES
 )
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/Modules")
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/src/facet")
+find_package(Threads REQUIRED)
+list(APPEND LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
 ###########################################################################
 # tclap
 
 find_package(TCLAP REQUIRED)
 include_directories(${TCLAP_INCLUDE_DIR})
+
+########################################################################
+# nanomsg
+
+if (WITH_SYSTEM_NANOMSG)
+	# TODO: FindNANOMGS.cmake
+	set(NANOMSG_USE_STATIC_LIBS true)
+	find_package(NANOMSG REQUIRED)
+else()
+	include(ExternalProject)
+	set(NANOMSG_ROOT "${CMAKE_CURRENT_BINARY_DIR}/nanomsg")
+	ExternalProject_Add(nanomsg
+		URL "https://github.com/nanomsg/nanomsg/archive/0.5-beta.tar.gz"
+		URL_MD5 "918c76cbf2498d5b2947e45207f36fab"
+		PATCH_COMMAND <SOURCE_DIR>/autogen.sh
+		CONFIGURE_COMMAND ./configure --enable-static --disable-shared --prefix <INSTALL_DIR>
+		INSTALL_DIR "${NANOMSG_ROOT}"
+		BUILD_IN_SOURCE 1
+	)
+	set(NANOMSG_INCLUDE_DIR ${NANOMSG_ROOT}/include)
+	set(NANOMSG_LIBRARIES ${NANOMSG_ROOT}/lib/libnanomsg.a)
+	list(APPEND EXTERNAL_DEPS nanomsg)
+endif()
+list(APPEND LIBRARIES -lanl ${NANOMSG_LIBRARIES})
 
 ##########################################################################
 # glog
@@ -55,13 +84,6 @@ else()
 	include_directories(${GLOG_INCLUDE_DIRS})
 	list(APPEND LIBRARIES ${GLOG_LIBRARIES})
 endif()
-
-##########################################################################
-# nx_socket
-
-set(NX_SOCK_SRC ./src/nx_socket.h ./src/nx_socket.c)
-add_library(nx_socket STATIC ${NX_SOCK_SRC})
-list(APPEND LIBRARIES nx_socket)
 
 ##########################################################################
 # cursord
@@ -89,6 +111,7 @@ else()
 	add_definitions("-DCFG_WITHOUT_ODBC")
 endif()
 add_executable(cursord ${SRC})
+add_dependencies(cursord ${EXTERNAL_DEPS})
 target_link_libraries(cursord ${LIBRARIES})
 set_target_properties(cursord PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP")
 
@@ -96,19 +119,42 @@ set_target_properties(cursord PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c+
 # client
 
 set(SRC_CLI ./src/cursor-cli.cpp
-	./src/string.hpp
-	./src/string.cpp)
+            ./src/string.hpp
+            ./src/string.cpp)
 add_executable(cursor-cli ${SRC_CLI})
+add_dependencies(cursor-cli ${EXTERNAL_DEPS})
 target_link_libraries(cursor-cli ${LIBRARIES})
 set_target_properties(cursor-cli PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x -D_GLIBCXX_USE_NANOSLEEP")
+
+###########################################################################
+# expand_ipv4rg
+
+if(WITH_expand_ipv4rg)
+	set(EXPAND_IPv4RG_SRC 
+		./src/string.hpp
+		./src/string.cpp
+		./src/cursor.hpp
+		./src/cursor.cpp
+		./src/cursor_file.hpp
+		./src/cursor_file.cpp
+		./src/ipv4_generator.hpp
+		./src/ipv4_generator.cpp
+		./src/shuffle.hpp
+		./src/shuffle.cpp
+		./src/speedometer.hpp
+		./src/speedometer.cpp
+		./misc/expand_ipv4rg.cpp)
+	add_executable(expand_ipv4rg ${EXPAND_IPv4RG_SRC})
+	target_link_libraries(expand_ipv4rg ${LIBRARIES})
+endif()
 
 ###########################################################################
 # ipv4gen
 
 if(NOT WITHOUT_IPV4GEN)
-	set(IPV4GEN_SRC ./misc/ipv4gen.c ./src/nx_socket.h)
+	set(IPV4GEN_SRC ./misc/ipv4gen.c)
 	add_executable(ipv4gen ${IPV4GEN_SRC})
-	target_link_libraries(ipv4gen nx_socket)
+	target_link_libraries(ipv4gen)
 endif()
 
 ###########################################################################
@@ -116,13 +162,19 @@ endif()
 
 if(NOT WITHOUT_IPV4GEN)
 	set(IPV4GEN_M_SRC ./misc/ipv4gen_m.cpp 
-	                  ./src/nx_socket.h
 	                  ./src/ipv4_generator.cpp 
 	                  ./src/ipv4_generator.hpp
 	                  ./src/shuffle.hpp
 	                  ./src/shuffle.cpp)
 	add_executable(ipv4gen_m ${IPV4GEN_M_SRC})
 	target_link_libraries(ipv4gen_m ${LIBRARIES})
+endif()
+
+###########################################################################
+# range_cvt
+
+if(NOT WITHOUT_RANGECVT)
+	add_executable(range_cvt ./misc/range_cvt.cpp)
 endif()
 
 ##########################################################################

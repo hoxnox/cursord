@@ -1,0 +1,15 @@
+#!/bin/bash
+
+RANDOM=$$
+let "num = RANDOM % 100"
+exec cursord -t generator -a "name=ipv4;init=1.0.0.1-255.255.255.255;mix=true;" -s $num/100 & cursor_pid=$!
+for i in `seq 1 1000`
+do
+	ip=`cursor-cli -c get`
+	let "tmp = RANDOM % 50"
+	for j in `seq 1 $tmp`
+	do
+		echo $ip
+	done
+done
+kill $cursor_pid

@@ -116,7 +116,9 @@ uint32_t ShuffleGenerator::GetNext()
 }
 
 /*@brief Restore ShuffleGenerator to previous state, using last
- * generated value*/
+ * generated value
+ * @param size - total size of shuffled set
+ * @param val - value to restore*/
 void ShuffleGenerator::RestoreVal(const uint32_t size, const uint32_t val)
 {
 	Init(size);
