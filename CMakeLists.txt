@@ -10,6 +10,7 @@ project(cursord)
 # OPTIONS
 
 option(WITHOUT_GLOG "Don't use google logging even it is in the system" OFF)
+option(WITH_SYSTEM_GLOG "Don't build google logging, use system's" OFF)
 option(WITHOUT_IPV4GEN "Don't build ipv4gen tool" ON)
 option(WITHOUT_ODBC "Don't build odbc dependent code" OFF)
 option(WITH_SYSTEM_NANOMSG "Use system nanomsg" OFF)
@@ -25,7 +26,7 @@ nx_configure()
 
 set(CURSORD_VERSION_MAJOR 3)
 set(CURSORD_VERSION_MINOR 0)
-set(CURSORD_VERSION_PATCH 0)
+set(CURSORD_VERSION_PATCH 1)
 # configuration header
 configure_file(
 	"${PROJECT_SOURCE_DIR}/src/cursord.cfg"
@@ -66,17 +67,33 @@ else()
 	set(NANOMSG_LIBRARIES ${NANOMSG_ROOT}/lib/libnanomsg.a)
 	list(APPEND EXTERNAL_DEPS nanomsg)
 endif()
-list(APPEND LIBRARIES -lanl ${NANOMSG_LIBRARIES})
+include_directories(${NANOMSG_INCLUDE_DIR})
+list(APPEND LIBRARIES -lanl -lrt ${NANOMSG_LIBRARIES})
 
 ##########################################################################
 # glog
 
 if( NOT WITHOUT_GLOG )
-	find_package( Glog )
-	if(NOT GLOG_FOUND)
-		message(STATUS "Glog not found, WITHOUT_GLOG had been set.")
-		set(WITHOUT_GLOG ON)
-	endif(NOT GLOG_FOUND)
+	if (WITH_SYSTEM_GLOG)
+		find_package( Glog )
+		if(NOT GLOG_FOUND)
+			message(STATUS "Glog not found, WITHOUT_GLOG had been set.")
+			set(WITHOUT_GLOG ON)
+		endif(NOT GLOG_FOUND)
+	else()
+		include(ExternalProject)
+		set(GLOG_ROOT "${CMAKE_CURRENT_BINARY_DIR}/glog")
+		ExternalProject_Add(glog
+			URL "https://github.com/google/glog/archive/v0.3.4.tar.gz"
+			URL_MD5 "df92e05c9d02504fb96674bc776a41cb"
+			CONFIGURE_COMMAND ./configure --enable-static --disable-shared --prefix <INSTALL_DIR>
+			INSTALL_DIR "${GLOG_ROOT}"
+			BUILD_IN_SOURCE 1
+		)
+		set(GLOG_INCLUDE_DIRS ${GLOG_ROOT}/include)
+		set(GLOG_LIBRARIES ${GLOG_ROOT}/lib/libglog.a)
+		list(APPEND EXTERNAL_DEPS glog)
+	endif()
 endif()
 
 if( WITHOUT_GLOG )
@@ -246,9 +263,9 @@ SET(CPACK_PACKAGE_VENDOR "Merder Kim <hoxnox@gmail.com>")
 SET(CPACK_PACKAGE_CONTACT ${CPACK_PACKAGE_VENDOR})
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/README.markdown")
 SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
-SET(CPACK_PACKAGE_VERSION_MAJOR "2")
-SET(CPACK_PACKAGE_VERSION_MINOR "2")
-SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_VERSION_MAJOR ${CURSORD_VERSION_MAJOR})
+SET(CPACK_PACKAGE_VERSION_MINOR ${CURSORD_VERSION_MINOR})
+SET(CPACK_PACKAGE_VERSION_PATCH ${CURSORD_VERSION_PATCH})
 SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
 SET(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
 SET(CPACK_RPM_PACKAGE_LICENSE "MIT")
