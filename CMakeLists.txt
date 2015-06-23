@@ -171,12 +171,23 @@ if(WITH_expand_ipv4rg)
 endif()
 
 ###########################################################################
+# nx_socket
+
+set(NX_SOCKET_SRC
+	./src/nx_socket.h
+	./src/nx_socket.c
+)
+add_library(nx_socket STATIC ${NX_SOCKET_SRC})
+list(APPEND LIBRARIES nx_socket)
+
+
+###########################################################################
 # ipv4gen
 
 if(NOT WITHOUT_IPV4GEN)
 	set(IPV4GEN_SRC ./misc/ipv4gen.c)
 	add_executable(ipv4gen ${IPV4GEN_SRC})
-	target_link_libraries(ipv4gen)
+	target_link_libraries(ipv4gen nx_socket)
 endif()
 
 ###########################################################################
