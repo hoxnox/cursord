@@ -174,6 +174,8 @@ void Cursor::Run(const char * url)
 			state_ = STATE_STOP | STATE_ERROR;
 		}
 	}
+	nn_shutdown(sock, 0);
+	nn_close(sock);
 }
 
 int Cursor::Next(const size_t count, std::deque<nx::String>& buf)
