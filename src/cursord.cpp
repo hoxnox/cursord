@@ -76,7 +76,7 @@ Args parse_args(const String args)
 
 void RunCursor(const std::string type,
                const Args& args,
-               const char* url,
+               std::vector<std::string> url,
                const size_t shared_curr,
                const size_t shared_total)
 {
@@ -139,17 +139,16 @@ int main(int argc, char * argv[])
 				"Each argument has the following format: <name>=<value>."
 				"Arguments splitted by ';'."), 
 				false, "", "string", cmd);
-		TCLAP::ValueArg<std::string> arg_url(
+		TCLAP::MultiArg<std::string> arg_url(
 				"u", "url", _("Server url"),
-				false, "ipc:///tmp/cursord.ipc", "string", cmd);
+				false, "string", cmd);
 
 		cmd.parse(argc, argv);
 		Args args = parse_args(String::fromUTF8(arg_arg.getValue()));
-		std::string url = arg_url.getValue();
 		size_t shared_curr = 0;
 		size_t shared_total = 0;
 		parse_shared(arg_shared.getValue(), shared_curr, shared_total);
-		RunCursor(arg_type.getValue(), args, url.c_str(), shared_curr, shared_total);
+		RunCursor(arg_type.getValue(), args, arg_url.getValue(), shared_curr, shared_total);
 	}
 	catch(TCLAP::ArgException &e)
 	{
