@@ -56,36 +56,47 @@ Cursor::~Cursor()
 }
 
 /**@brief Start cursor server*/
-void Cursor::Run(const char * url)
+void Cursor::Run(std::vector<std::string>& urls)
 {
-	int sock = nn_socket(AF_SP, NN_PAIR);
-	if (sock < 0)
+	if (urls.empty())
 	{
-		LOG(ERROR) << _("Error creating socket.")
-		           << _(" Message: ") << nn_strerror(errno);
+		LOG(INFO) << "No URL to bind on. Quit.";
 		return;
 	}
-	if (nn_bind(sock, url) < 0)
-	{
-		LOG(ERROR) << _("Error binding socket.")
-		           << _(" Message: ") << nn_strerror(errno);
-		return;
-	}
-	LOG(INFO) << _("Starting cursor.") << _(" URL: ") << url;
 
+	std::vector<int> socks;
+	for (auto url : urls)
+	{
+		int sock = nn_socket(AF_SP, NN_PAIR);
+		if (sock < 0)
+		{
+			LOG(ERROR) << _("Error creating socket.")
+			           << _(" Message: ") << nn_strerror(errno);
+			return;
+		}
+		if (nn_bind(sock, url.c_str()) < 0)
+		{
+			LOG(ERROR) << _("Error binding socket.")
+			           << _(" Message: ") << nn_strerror(errno);
+			return;
+		}
+		LOG(INFO) << _("Starting cursor.") << _(" URL: ") << url;
+		socks.push_back(sock);
+	}
+
+	struct nn_pollfd* pfd = new nn_pollfd[socks.size()];
 	while( true )
 	{
-		struct nn_pollfd pfd[1];
-		pfd[0].fd = sock;
-		pfd[0].events = NN_POLLIN;
-		int rs = nn_poll (pfd, 1, 1000);
+		for (size_t i = 0; i < socks.size(); ++i)
+		{
+			pfd[i].fd = socks[i];
+			pfd[i].events = NN_POLLIN;
+		}
+		int rs = nn_poll (pfd, socks.size(), 1000);
 		if (rs == 0)
 		{
 			if(state_ & STATE_STOP)
-			{
-				nn_shutdown(sock, 0);
 				break;
-			}
 			continue;
 		}
 		if (rs == -1)
@@ -98,75 +109,76 @@ void Cursor::Run(const char * url)
 			}
 			continue;
 		}
-		if (!(pfd[0].revents & NN_POLLIN))
+		for (size_t i = 0; i < socks.size(); ++i)
 		{
-			LOG(ERROR) << _("Select returned positive, but sock is not in rfds.");
-			continue;
-		}
-		char *buf = NULL;
-		int bufsz = nn_recv (sock, &buf, NN_MSG, 0);
-		if (bufsz < 0)
-		{
-			LOG(ERROR) << _("Error data receiving.")
-			           << _(" Message: ") << nn_strerror(errno);
-			state_ = STATE_STOP | STATE_ERROR;
-			nn_freemsg (buf);
-			continue;
-		}
-
-		nx::String request = nx::String::fromUTF8(
-				std::string(buf, buf + bufsz)).trim().toLower();
-		nn_freemsg (buf);
-		nx::String reply;
-		if(request == "speed")
-		{
-			reply = nx::String::fromASCII(speedometer_.AVGSpeedS()) + L" "
-			      + nx::String::fromASCII(speedometer_.LastSpeedS());
-		}
-		else if(request == "stop")
-		{
-			LOG(INFO) << _("Received stop signal. Setting STATE_STOP.");
-			state_ = state_ | STATE_STOP;
-			continue;
-		}
-		else if(request == "get")
-		{
-			++speedometer_;
-			if(state_ == STATE_STOP)
+			if (pfd[i].revents & NN_POLLIN)
 			{
-				LOG(INFO) << _("Received GET in STATE_STOP");
-				reply = L"END";
-			}
-			else
-			{
-				if(buf_.empty())
+				char *buf = NULL;
+				int bufsz = nn_recv (pfd[i].fd, &buf, NN_MSG, 0);
+				if (bufsz < 0)
 				{
-					Next(bufsz_, buf_);
-					if(buf_.empty())
+					LOG(ERROR) << _("Error data receiving.")
+					           << _(" Message: ") << nn_strerror(errno);
+					state_ = STATE_STOP | STATE_ERROR;
+					nn_freemsg (buf);
+					continue;
+				}
+
+				nx::String request = nx::String::fromUTF8(
+						std::string(buf, buf + bufsz)).trim().toLower();
+				nn_freemsg (buf);
+				nx::String reply;
+				if(request == "speed")
+				{
+					reply = nx::String::fromASCII(speedometer_.AVGSpeedS()) + L" "
+					      + nx::String::fromASCII(speedometer_.LastSpeedS());
+				}
+				else if(request == "stop")
+				{
+					LOG(INFO) << _("Received stop signal. Setting STATE_STOP.");
+					state_ = state_ | STATE_STOP;
+					continue;
+				}
+				else if(request == "get")
+				{
+					++speedometer_;
+					if(state_ == STATE_STOP)
 					{
-						LOG(INFO) << _("Cursor is empty. Stopping.");
-						state_ = state_ | STATE_STOP;
+						LOG(INFO) << _("Received GET in STATE_STOP");
 						reply = L"END";
 					}
 					else
 					{
-						LOG(INFO) << "Renew buffer. Last element: " << buf_.back().toUTF8();
+						if(buf_.empty())
+						{
+							Next(bufsz_, buf_);
+							if(buf_.empty())
+							{
+								LOG(INFO) << _("Cursor is empty. Stopping.");
+								state_ = state_ | STATE_STOP;
+								reply = L"END";
+							}
+							else
+							{
+								LOG(INFO) << "Renew buffer. Last element: " << buf_.back().toUTF8();
+							}
+						}
+						if(!(state_ & STATE_STOP))
+						{
+							reply = buf_.front();
+							buf_.pop_front();
+						}
 					}
 				}
-				if(!(state_ & STATE_STOP))
+				else
 				{
-					reply = buf_.front();
-					buf_.pop_front();
+					LOG(WARNING) << _("Unknown request: ") << request.toUTF8();
+					continue;
 				}
+				std::string reply_utf8 = reply.toUTF8();
+				rs = nn_send(pfd[i].fd, reply_utf8.c_str(), reply_utf8.length(), 0);
 			}
 		}
-		else
-		{
-			LOG(WARNING) << _("Unknown request: ") << request.toUTF8();
-			continue;
-		}
-		std::string reply_utf8 = reply.toUTF8();
-		rs = nn_send(sock, reply_utf8.c_str(), reply_utf8.length(), 0);
 		if(rs < 0)
 		{
 			LOG(ERROR) << _("Error sending reply.")
@@ -174,8 +186,12 @@ void Cursor::Run(const char * url)
 			state_ = STATE_STOP | STATE_ERROR;
 		}
 	}
-	nn_shutdown(sock, 0);
-	nn_close(sock);
+	delete [] pfd;
+	for (auto sock : socks)
+	{
+		nn_shutdown(sock, 0);
+		nn_close(sock);
+	}
 }
 
 int Cursor::Next(const size_t count, std::deque<nx::String>& buf)
