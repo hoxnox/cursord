@@ -5,6 +5,7 @@
 #ifndef __NX_CURSOR_HPP__
 #define __NX_CURSOR_HPP__
 
+#include <vector>
 #include <string>
 #include <deque>
 #include <map>
@@ -23,7 +24,7 @@ class Cursor
 		Cursor();
 		Cursor(const size_t shared_curr, const size_t shared_total);
 		virtual ~Cursor();
-		void Run(const char* url);
+		void Run(std::vector<std::string>& urls);
 	protected:
 		int Next(const size_t count, std::deque<nx::String>& buf);
 		virtual int do_next(const size_t count, std::deque<nx::String>& buf) = 0;
