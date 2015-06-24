@@ -25,8 +25,8 @@ include("${PROJECT_SOURCE_DIR}/cmake/ext/nx_utils.cmake")
 nx_configure()
 
 set(CURSORD_VERSION_MAJOR 3)
-set(CURSORD_VERSION_MINOR 0)
-set(CURSORD_VERSION_PATCH 1)
+set(CURSORD_VERSION_MINOR 1)
+set(CURSORD_VERSION_PATCH 0)
 # configuration header
 configure_file(
 	"${PROJECT_SOURCE_DIR}/src/cursord.cfg"
