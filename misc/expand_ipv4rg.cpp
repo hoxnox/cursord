@@ -11,8 +11,8 @@ using namespace cursor;
 class CursorFileUnprotected : public CursorFile
 {
 	public:
-		CursorFileUnprotected(const Cursor::Sockaddr addr, const Cursor::Args args)
-			: CursorFile(addr, args)
+		CursorFileUnprotected(const Cursor::Args args)
+			: CursorFile(args)
 		{
 		}
 		int next(const size_t count, std::deque<nx::String>& buf)
@@ -26,39 +26,30 @@ int main(int argc, char * argv[])
 	std::ios::sync_with_stdio(false);
 	if (argc < 2)
 	{
-		std::cout << "Usage: " << argv[0]
-			<< " ipv4rg_file expandfile" << std::endl;
+		std::cout << "Usage: " << argv[0] << " ipv4rg_file" << std::endl;
 		return 0;
 	}
 
-	Cursor::Sockaddr addr;
-	addr.ss_family = AF_INET;
-	((sockaddr_in *)&addr)->sin_addr.s_addr = inet_addr("127.0.0.1");
-	((sockaddr_in *)&addr)->sin_port = 54321;
 	Cursor::Args args;
 	args[L"name"] = nx::String::fromUTF8(argv[1]);
 	args[L"type"] = L"ipv4rg";
-	CursorFileUnprotected cf(addr, args);
-	std::ofstream ofile(argv[2]);
-	if (!ofile.is_open())
-	{
-		std::cout << "Error opening out file: " << argv[2] << std::endl;
-		return 0;
-	}
+	CursorFileUnprotected cf(args);
 	const size_t BUFSZ = 1000;
-	std::deque<nx::String> buf(BUFSZ);
+	std::deque<nx::String> buf;
 	while(true)
 	{
-		cf.next(BUFSZ, buf);
-		for(size_t i = 0; i < BUFSZ && i < buf.size(); ++i)
+		if (cf.next(BUFSZ, buf) == -1)
+			return 0;
+		if (buf.size() == 0)
+			return 0;
+		for(auto i : buf)
 		{
-			if(buf[i] == L"END")
+			if(i == L"END")
 				return 0;
-			ofile << buf[i].toUTF8() << std::endl;
+			std::cout << i.toUTF8() << std::endl;
 		}
 		buf.clear();
 	}
-
 	return 0;
 }
 

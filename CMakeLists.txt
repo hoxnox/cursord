@@ -25,8 +25,8 @@ include("${PROJECT_SOURCE_DIR}/cmake/ext/nx_utils.cmake")
 nx_configure()
 
 set(CURSORD_VERSION_MAJOR 3)
-set(CURSORD_VERSION_MINOR 0)
-set(CURSORD_VERSION_PATCH 1)
+set(CURSORD_VERSION_MINOR 1)
+set(CURSORD_VERSION_PATCH 0)
 # configuration header
 configure_file(
 	"${PROJECT_SOURCE_DIR}/src/cursord.cfg"
@@ -38,6 +38,7 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/src/facet")
 find_package(Threads REQUIRED)
 list(APPEND LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+add_definitions("-std=c++14")
 
 ###########################################################################
 # tclap
