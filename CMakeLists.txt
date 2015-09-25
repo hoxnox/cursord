@@ -38,6 +38,7 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/src/facet")
 find_package(Threads REQUIRED)
 list(APPEND LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+add_definitions("-std=c++14")
 
 ###########################################################################
 # tclap
