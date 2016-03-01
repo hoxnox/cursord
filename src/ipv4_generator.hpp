@@ -1,15 +1,18 @@
-/* @author $username$ <$usermail$>
- * @date $date$
+/* @author hoxnox <hoxnox@gmail.com>
+ * @date 20160301 16:00:58
  *
  * @brief IPv4 generator for cursor.*/
 
 #ifndef __IPV4_GENERATOR__
 #define __IPV4_GENERATOR__
 
-#include <shuffle.hpp>
+#include <shufor.h>
 #include <string>
+#include <memory>
 
 namespace cursor {
+
+using namespace shufor;
 
 class IPv4Generator
 {
@@ -40,7 +43,7 @@ class IPv4Generator
 		size_t           counter_;
 		const uint32_t   prime_number_;
 		uint32_t         initial_;
-		ShuffleGenerator shuffle_;
+		std::shared_ptr<Shufor> shuffle_;
 		bool             skip_private_;
 };
 

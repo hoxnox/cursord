@@ -57,9 +57,7 @@ else()
 	include(ExternalProject)
 	set(NANOMSG_ROOT "${CMAKE_CURRENT_BINARY_DIR}/nanomsg")
 	ExternalProject_Add(nanomsg
-		URL "https://github.com/nanomsg/nanomsg/archive/0.5-beta.tar.gz"
-		URL_MD5 "918c76cbf2498d5b2947e45207f36fab"
-		PATCH_COMMAND <SOURCE_DIR>/autogen.sh
+		URL "file://${PROJECT_SOURCE_DIR}/third-party/nanomsg-0.6-beta.tar.gz"
 		CONFIGURE_COMMAND ./configure --enable-static --disable-shared --prefix <INSTALL_DIR>
 		INSTALL_DIR "${NANOMSG_ROOT}"
 		BUILD_IN_SOURCE 1
@@ -70,6 +68,23 @@ else()
 endif()
 include_directories(${NANOMSG_INCLUDE_DIR})
 list(APPEND LIBRARIES -lanl -lrt ${NANOMSG_LIBRARIES})
+
+########################################################################
+# shufor
+
+set(SHUFOR_ROOT "${CMAKE_CURRENT_BINARY_DIR}/shufor")
+ExternalProject_Add(shufor
+	URL "file://${PROJECT_SOURCE_DIR}/third-party/shufor-0.0.1.tar.gz"
+	URL_MD5 "243a9a38efaa267aa647c0b068462e2a" 
+	CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+	INSTALL_DIR "${SHUFOR_ROOT}"
+	BUILD_IN_SOURCE 1
+)
+set(SHUFOR_INCLUDE_DIR ${SHUFOR_ROOT}/include)
+set(SHUFOR_LIBRARIES ${SHUFOR_ROOT}/lib/libshufor.a)
+list(APPEND EXTERNAL_DEPS shufor)
+include_directories(${SHUFOR_INCLUDE_DIR})
+list(APPEND LIBRARIES ${SHUFOR_LIBRARIES})
 
 ##########################################################################
 # glog
@@ -120,8 +135,6 @@ set(SRC ./src/cursord.cpp
 	./src/cursor_file.cpp
 	./src/ipv4.hpp
 	./src/ipv4.cpp
-	./src/shuffle.hpp
-	./src/shuffle.cpp
 	./src/speedometer.hpp
 	./src/speedometer.cpp)
 if(NOT WITHOUT_ODBC)
@@ -162,8 +175,6 @@ if(WITH_expand_ipv4rg)
 		./src/ipv4.cpp
 		./src/ipv4_generator.hpp
 		./src/ipv4_generator.cpp
-		./src/shuffle.hpp
-		./src/shuffle.cpp
 		./src/speedometer.hpp
 		./src/speedometer.cpp
 		./misc/expand_ipv4rg.cpp)
@@ -197,9 +208,7 @@ endif()
 if(NOT WITHOUT_IPV4GEN)
 	set(IPV4GEN_M_SRC ./misc/ipv4gen_m.cpp 
 	                  ./src/ipv4_generator.cpp 
-	                  ./src/ipv4_generator.hpp
-	                  ./src/shuffle.hpp
-	                  ./src/shuffle.cpp)
+	                  ./src/ipv4_generator.hpp)
 	add_executable(ipv4gen_m ${IPV4GEN_M_SRC})
 	target_link_libraries(ipv4gen_m ${LIBRARIES})
 endif()
@@ -216,9 +225,6 @@ endif()
 
 if( WITH_TESTS )
 	set(SOURCES_TEST
-		./test/tshuffle.hpp
-		./src/shuffle.hpp
-		./src/shuffle.cpp
 		./src/ipv4.cpp
 		./src/ipv4.hpp
 		./test/test.cpp
