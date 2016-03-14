@@ -1,6 +1,6 @@
-/**@author $username$ <$usermail$>
- * @date $date$
- * @copyright $username$*/
+/**@author hoxnox <hoxnox@gmail.com>
+ * @date 20160314 09:11:14
+ * @copyright hoxnox*/
 
 #include "cursor_file.hpp"
 #include <endians.hpp>
@@ -111,20 +111,6 @@ size_t getFileSz(std::ifstream& file, CursorFile::FileTypes type)
 
 CursorFile::CursorFile(const Cursor::Args args)
 	: Cursor()
-	, repeat_(false)
-	, ftype_(FTYPE_TEXT)
-	, ipv4gen_(false)
-	, statesz_(0)
-	, initialized_(false)
-	, totalsz_(0)
-	, passedsz_(0)
-{
-	init(args);
-}
-
-CursorFile::CursorFile(const Cursor::Args args,
-                       const size_t shared_curr, const size_t shared_total)
-	: Cursor(shared_curr, shared_total)
 	, repeat_(false)
 	, ftype_(FTYPE_TEXT)
 	, ipv4gen_(false)

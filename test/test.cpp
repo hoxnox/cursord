@@ -9,11 +9,12 @@
 // test cases
 //#include "tgenerators.hpp"
 #include "tipv4.hpp"
+#include "tUtils.hpp"
+#include "tMixedCartesianProduct.hpp"
 
 int main(int argc, char *argv[])
 {
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 }
-
 

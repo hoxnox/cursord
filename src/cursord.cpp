@@ -1,6 +1,6 @@
-/**@author $username$ <$usermail$>
- * @date $date$
- * (C) $username$ */
+/**@author hoxnox <hoxnox@gmail.com>
+ * @date 20160314 09:11:14
+ * (C) hoxnox */
 
 #include <tclap/CmdLine.h>
 
@@ -35,11 +35,18 @@ inline int parse_shared(const std::string shared, size_t& shared_current,
 	size_t pos = shared.find('/');
 	if(pos == 0 || pos >= shared.length() - 1 || pos == std::string::npos)
 	{
-		shared_current = 0;
-		shared_total = 0;
+		shared_current = 1;
+		shared_total = 1;
+		return -1;
 	}
 	shared_current = (size_t)atol(shared.substr(0, pos).c_str());
 	shared_total = (size_t)atol(shared.substr(pos + 1, shared.length() - pos - 1).c_str());
+	if (shared_current == 0 || shared_total == 0 || shared_current < shared_total)
+	{
+		shared_current = 1;
+		shared_total = 1;
+		return -1;
+	}
 	return 0;
 }
 
@@ -76,42 +83,20 @@ Args parse_args(const String args)
 
 void RunCursor(const std::string type,
                const Args& args,
-               std::vector<std::string> url,
-               const size_t shared_curr,
-               const size_t shared_total)
+               Cursor::Config&& cfg)
 {
-	bool shared = true;
-	if((shared_total == 0 || shared_curr == 0) || shared_curr > shared_total)
-		shared = false;
 	Cursor * curs;
 	if(type == "generator")
-	{
-		if(shared)
-			curs = new CursorGenerator(args, shared_curr, shared_total);
-		else
-			curs = new CursorGenerator(args);
-	}
-
+		curs = new CursorGenerator(args);
 	else if(type == "file")
-	{
-		if(shared)
-			curs = new CursorFile(args, shared_curr, shared_total);
-		else
-			curs = new CursorFile(args);
-	}
-
+		curs = new CursorFile(args);
 #ifndef CFG_WITHOUT_ODBC
 	else if(type == "odbc")
-	{
-		if(shared)
-			curs = new CursorODBC(args, shared_curr, shared_total);
-		else
 			curs = new CursorODBC(args);
-	}
 #endif // CFG_WITHOUT_ODBC
 	else
 		throw TCLAP::ArgException(_("Unknown cursor type"), "t");
-	curs->Run(url);
+	curs->Run(std::move(cfg));
 	delete curs;
 	return;
 }
@@ -140,15 +125,35 @@ int main(int argc, char * argv[])
 				"Arguments splitted by ';'."), 
 				false, "", "string", cmd);
 		TCLAP::MultiArg<std::string> arg_url(
-				"u", "url", _("Server url"),
-				false, "string", cmd);
+			"u", "url", _("Server url"),
+			false, "string", cmd);
+		TCLAP::MultiArg<std::string> arg_extra(
+			"e", "extra", _("Extra files to append content."),
+			false, "string", cmd);
+		TCLAP::ValueArg<std::string> arg_extra_delim(
+			"E", "extra-delim", _("Delimiter, used to separate extra files values. Defalut is ';'"),
+				false, ";", "string", cmd);
+		TCLAP::ValueArg<bool> arg_extra_mix(
+			"M", "extra-mix", _("Mix extra files content. Defalt is false."),
+			false, false, "bool", cmd);
 
 		cmd.parse(argc, argv);
 		Args args = parse_args(String::fromUTF8(arg_arg.getValue()));
 		size_t shared_curr = 0;
 		size_t shared_total = 0;
-		parse_shared(arg_shared.getValue(), shared_curr, shared_total);
-		RunCursor(arg_type.getValue(), args, arg_url.getValue(), shared_curr, shared_total);
+		if (parse_shared(arg_shared.getValue(), shared_curr, shared_total) == -1)
+		{
+			std::cerr << "Error parsing option shared."
+			          << "Option value: " << arg_shared.getValue()
+			          << std::endl;
+		}
+		RunCursor(arg_type.getValue(), args,
+			Cursor::Config(std::move(arg_url.getValue()),
+			               std::move(arg_extra.getValue()),
+			               shared_curr,
+			               shared_total,
+			               std::move(arg_extra_mix.getValue()),
+			               std::move(arg_extra_delim.getValue())));
 	}
 	catch(TCLAP::ArgException &e)
 	{

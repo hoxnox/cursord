@@ -1,6 +1,6 @@
-/**@author $username$ <$usermail$>
- * @date $date$
- * @copyright $username$*/
+/**@author hoxnox <hoxnox@gmail.com>
+ * @date 20160314 09:11:14
+ * @copyright hoxnox*/
 
 #include <nanomsg/nn.h>
 #include <nanomsg/pair.h>
@@ -12,6 +12,8 @@
 #include <iomanip>
 #include <limits>
 #include <unistd.h>
+#include <fstream>
+#include <Utils.hpp>
 
 namespace cursor
 {
@@ -25,27 +27,11 @@ namespace cursor
 Cursor::Cursor()
 	: state_(0)
 	, bufsz_(1000)
-	, shared_(false)
-	, shared_curr_(0)
-	, shared_total_(0)
+	, shared_curr_(1)
+	, shared_total_(1)
+	, shufor_(nullptr)
 {
 }
-
-Cursor::Cursor(const size_t shared_curr, const size_t shared_total)
-	: state_(0)
-	, bufsz_(1000)
-	, shared_(true)
-	, shared_curr_(shared_curr)
-	, shared_total_(shared_total)
-{
-	if(shared_total_ < shared_curr_ || shared_curr_ == 0 || shared_total_ == 0)
-	{
-		shared_ = false;
-		shared_curr_ = 0;
-		shared_total_ = 0;
-	}
-}
-
 
 Cursor::~Cursor()
 {
@@ -55,17 +41,37 @@ Cursor::~Cursor()
 		LOG(INFO) << _("Cursor destruction: ") << buf_.front();
 }
 
+typedef std::vector<std::string> Lines;
+
 /**@brief Start cursor server*/
-void Cursor::Run(std::vector<std::string>& urls)
+void Cursor::Run(const Config&& cfg)
 {
-	if (urls.empty())
+	if (cfg.urls.empty())
 	{
 		LOG(INFO) << "No URL to bind on. Quit.";
 		return;
 	}
-
+	shared_curr_ = cfg.shared_curr;
+	shared_total_ = cfg.shared_total;
+	extra_totalsz_ = 0;
+	if (!cfg.extra_fnames.empty())
+	{
+		if ((extra_data_ = read_files(cfg.extra_fnames)).empty())
+		{
+			LOG(INFO) << _("Error reading extra files.");
+			return;
+		}
+		extra_delim_ = cfg.extra_delim;
+		std::vector<sh::TSize> sizes;
+		for (auto i : extra_data_)
+		{
+			sizes.push_back(i.size());
+			extra_totalsz_ *= i.size();
+		}
+		shufor_.reset(new sh::ShuforV(sizes, SH_SEED));
+	}
 	std::vector<int> socks;
-	for (auto url : urls)
+	for (auto url : cfg.urls)
 	{
 		int sock = nn_socket(AF_SP, NN_PAIR);
 		if (sock < 0)
@@ -197,20 +203,29 @@ void Cursor::Run(std::vector<std::string>& urls)
 int Cursor::Next(const size_t count, std::deque<nx::String>& buf)
 {
 	int rs;
-	if(shared_)
+	if (extra_data_.empty())
 	{
-		std::deque<nx::String> tmpbuf;
-		rs = do_next(count * shared_total_, tmpbuf);
-		if(rs >= 0)
-			for(size_t i = 0, j = shared_curr_ - 1; i < count && j < tmpbuf.size(); 
-					++i, j = shared_curr_ - 1 + shared_total_*i )
-			{
-				buf.push_back(tmpbuf[j]);
-			}
+		if (shared_total_ != 0 && shared_curr_ != 0 && shared_curr_ < shared_total_)
+		{
+			std::deque<nx::String> tmpbuf;
+			rs = do_next(count * shared_total_, tmpbuf);
+			if(rs >= 0)
+				for(size_t i = 0, j = shared_curr_ - 1; i < count && j < tmpbuf.size(); 
+						++i, j = shared_curr_ - 1 + shared_total_*i )
+				{
+					buf.push_back(tmpbuf[j]);
+				}
+		}
+		else
+		{
+			rs = do_next(count, buf);
+		}
+	}
+	else if (shufor_ == nullptr)
+	{ // +extra
 	}
 	else
-	{
-		rs = do_next(count, buf);
+	{ // +extra with mixing
 	}
 	return rs;
 }

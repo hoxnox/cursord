@@ -135,6 +135,10 @@ set(SRC ./src/cursord.cpp
 	./src/cursor_file.cpp
 	./src/ipv4.hpp
 	./src/ipv4.cpp
+	./src/Utils.hpp
+	./src/Utils.cpp
+	./src/MixedCartesianProduct.cpp
+	./src/MixedCartesianProduct.hpp
 	./src/speedometer.hpp
 	./src/speedometer.cpp)
 if(NOT WITHOUT_ODBC)
@@ -173,6 +177,10 @@ if(WITH_expand_ipv4rg)
 		./src/cursor_file.cpp
 		./src/ipv4.hpp
 		./src/ipv4.cpp
+		./src/Utils.hpp
+		./src/Utils.cpp
+		./src/MixedCartesianProduct.cpp
+		./src/MixedCartesianProduct.hpp
 		./src/ipv4_generator.hpp
 		./src/ipv4_generator.cpp
 		./src/speedometer.hpp
@@ -227,6 +235,8 @@ if( WITH_TESTS )
 	set(SOURCES_TEST
 		./src/ipv4.cpp
 		./src/ipv4.hpp
+		./src/Utils.cpp
+		./src/MixedCartesianProduct.cpp
 		./test/test.cpp
 	)
 	if(BUILD_GTEST)
@@ -251,7 +261,7 @@ if( WITH_TESTS )
 		nx_GTEST_ADD_TESTS("${TEST}" ${SOURCES_TEST})
 	endif(BUILD_GTEST)
 	set_target_properties("${TEST}" PROPERTIES
-		COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x")
+		COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++14")
 else( WITH_TESTS )
 	message(STATUS "Tests disabled. Use -DBUILD_TESTS=TRUE to enable it.")
 endif( WITH_TESTS )
