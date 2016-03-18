@@ -133,9 +133,8 @@ int main(int argc, char * argv[])
 		TCLAP::ValueArg<std::string> arg_extra_delim(
 			"E", "extra-delim", _("Delimiter, used to separate extra files values. Defalut is ';'"),
 				false, ";", "string", cmd);
-		TCLAP::ValueArg<bool> arg_extra_mix(
-			"M", "extra-mix", _("Mix extra files content. Defalt is false."),
-			false, false, "bool", cmd);
+		TCLAP::MultiSwitchArg arg_extra_mix(
+			"M", "extra-mix", _("Mix extra files content. Default is false."), cmd);
 
 		cmd.parse(argc, argv);
 		Args args = parse_args(String::fromUTF8(arg_arg.getValue()));

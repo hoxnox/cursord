@@ -74,3 +74,57 @@ TEST_F(TestMixedCartesianProduct, mix_none)
 	}
 }
 
+TEST_F(TestMixedCartesianProduct, mix_shuffle_1)
+{
+	MixedCartesianProduct<std::vector<std::string>::const_iterator> mixer({
+				make_pair(data1.begin(), data1.end()),
+				make_pair(data2.begin(), data2.end()),
+				make_pair(data3.begin(), data3.end())
+			}, MixedCartesianProduct<std::vector<std::string>::const_iterator>::MIX_SHUFFLE, 1);
+	EXPECT_EQ(std::vector<std::string>({"three", "five", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "five", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "four", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "five", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "five", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"three", "five", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"three", "four", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "four", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "five", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"three", "four", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "four", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "four", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"three", "five", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "four", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"three", "four", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "five", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "five", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "four", "six"  }), *mixer);
+}
+
+TEST_F(TestMixedCartesianProduct, mix_shuffle_abcdef0e)
+{
+	MixedCartesianProduct<std::vector<std::string>::const_iterator> mixer({
+				make_pair(data1.begin(), data1.end()),
+				make_pair(data2.begin(), data2.end()),
+				make_pair(data3.begin(), data3.end())
+			}, MixedCartesianProduct<std::vector<std::string>::const_iterator>::MIX_SHUFFLE, 0xabcdef0e);
+	EXPECT_EQ(std::vector<std::string>({"three", "four", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "five", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "five", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "four", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"three", "five", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "five", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "four", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "five", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "five", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"three", "five", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"three", "four", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "four", "seven"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "five", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"three", "four", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"one"  , "four", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "four", "eight"}), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"three", "five", "six"  }), *mixer); ++mixer;
+	EXPECT_EQ(std::vector<std::string>({"two"  , "four", "seven"}), *mixer);
+}
+

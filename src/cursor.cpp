@@ -29,7 +29,6 @@ Cursor::Cursor()
 	, bufsz_(1000)
 	, shared_curr_(1)
 	, shared_total_(1)
-	, shufor_(nullptr)
 {
 }
 
@@ -53,23 +52,24 @@ void Cursor::Run(const Config&& cfg)
 	}
 	shared_curr_ = cfg.shared_curr;
 	shared_total_ = cfg.shared_total;
-	extra_totalsz_ = 0;
-	if (!cfg.extra_fnames.empty())
+
+	std::vector<MixerT::InRangeT> fiters;
+	std::vector<std::shared_ptr<std::ifstream>> ifiles;
+	for (auto fname : cfg.extra_fnames)
 	{
-		if ((extra_data_ = read_files(cfg.extra_fnames)).empty())
+		ifiles.emplace_back(new std::ifstream(fname.c_str()));
+		if (!ifiles.back()->is_open())
 		{
-			LOG(INFO) << _("Error reading extra files.");
-			return;
+			LOG(ERROR) << _("Error file opening.")
+			           << _(" Filename: \"") << fname << "\"";
+			continue;
 		}
-		extra_delim_ = cfg.extra_delim;
-		std::vector<sh::TSize> sizes;
-		for (auto i : extra_data_)
-		{
-			sizes.push_back(i.size());
-			extra_totalsz_ *= i.size();
-		}
-		shufor_.reset(new sh::ShuforV(sizes, SH_SEED));
+		fiters.emplace_back(MixerT::InRangeT(LineIterT(*ifiles.back()), LineIterT()));
 	}
+	extra_delim_ = cfg.extra_delim;
+	extra_state_.reset(new MixerT(fiters,
+		cfg.extra_mix ? MixerT::MIX_SHUFFLE : MixerT::MIX_NONE, 0xABCDEF0F));
+
 	std::vector<int> socks;
 	for (auto url : cfg.urls)
 	{
@@ -202,30 +202,32 @@ void Cursor::Run(const Config&& cfg)
 
 int Cursor::Next(const size_t count, std::deque<nx::String>& buf)
 {
-	int rs;
-	if (extra_data_.empty())
+	int rs = 0;
+	if (shared_total_ != 0 && shared_curr_ != 0 && shared_curr_ < shared_total_)
 	{
-		if (shared_total_ != 0 && shared_curr_ != 0 && shared_curr_ < shared_total_)
-		{
-			std::deque<nx::String> tmpbuf;
-			rs = do_next(count * shared_total_, tmpbuf);
-			if(rs >= 0)
-				for(size_t i = 0, j = shared_curr_ - 1; i < count && j < tmpbuf.size(); 
-						++i, j = shared_curr_ - 1 + shared_total_*i )
-				{
-					buf.push_back(tmpbuf[j]);
-				}
+		if (extra_state_ && extra_state_->IsReady())
+		{  // +extra with mixing
+			std::string rs = extra_state_->Get(extra_delim_);
+			buf.emplace_back(rs.begin(), rs.end());
+			++(*extra_state_);
+			rs = 1;
 		}
 		else
 		{
-			rs = do_next(count, buf);
+				std::deque<nx::String> tmpbuf;
+				rs = do_next(count * shared_total_, tmpbuf);
+				if(rs >= 0)
+					for(size_t i = 0, j = shared_curr_ - 1; i < count && j < tmpbuf.size();
+							++i, j = shared_curr_ - 1 + shared_total_*i )
+					{
+						buf.push_back(tmpbuf[j]);
+					}
 		}
 	}
-	else if (shufor_ == nullptr)
-	{ // +extra
-	}
 	else
-	{ // +extra with mixing
+	{
+		++(*extra_state_);
+		rs = do_next(count, buf);
 	}
 	return rs;
 }

@@ -9,6 +9,7 @@
 #include <string>
 #include <deque>
 #include <map>
+#include <fstream>
 
 #include <logging.h>
 #include <gettext.h>
@@ -16,6 +17,7 @@
 #include <string.hpp>
 #include "speedometer.hpp"
 #include <shufor.h>
+#include <MixedCartesianProduct.hpp>
 
 namespace sh=shufor;
 
@@ -36,17 +38,17 @@ public:
 			: urls(urls)
 			, shared_curr(shared_curr)
 			, shared_total(shared_total)
-			, extra_fnames(extra_fnames)
 			, extra_mix(extra_mix)
 			, extra_delim(extra_delim)
+			, extra_fnames(extra_fnames)
 		{
 		}
 		std::vector<std::string> urls;
 		size_t                   shared_curr;
 		size_t                   shared_total;
+		bool                     extra_mix;
+		std::string              extra_delim;
 		std::vector<std::string> extra_fnames;
-		bool                     extra_mix = false;
-		std::string              extra_delim = ";";
 	};
 	typedef std::map<nx::String, nx::String> Args;
 	Cursor();
@@ -54,6 +56,11 @@ public:
 	void Run(const Config&& cfg);
 protected:
 	int Next(const size_t count, std::deque<nx::String>& buf);
+	/**@brief Reinitialize cursor. After that call do_next must produce
+	 * the same element as it was initialy started.*/
+	//virtual int reset(const Config&& cfg) = 0;
+	/**@brief Generate next count elements and push_back em into buf,
+	 * return negative on error.*/
 	virtual int do_next(const size_t count, std::deque<nx::String>& buf) = 0;
 	nx::String initial_;
 	bool isShared() const;
@@ -65,16 +72,27 @@ private:
 		STATE_STOP  = 1,
 		STATE_ERROR = 1 << 1
 	};
+	class Line : public std::string
+	{
+	public:
+		Line() {}
+		template<class InIter>
+		Line(InIter begin, InIter end) : std::string(begin, end) {}
+		friend std::istream & operator>>(std::istream & is, Line & line)
+		{
+			return std::getline(is, line);
+		}
+	};
+	typedef std::istream_iterator<Line> LineIterT;
+	typedef MixedCartesianProduct<LineIterT> MixerT ;
 	typedef std::vector<std::string> Lines;
+
+	std::string                  extra_delim_;
+	std::unique_ptr<MixerT>      extra_state_;
 	std::deque<nx::String>       buf_;
 	size_t                       bufsz_;
 	int                          state_;
 	Speedometer                  speedometer_;
-	std::vector<Lines>           extra_data_;
-	std::string                  extra_delim_;
-	bool                         extra_mix_;
-	sh::TSize                    extra_totalsz_;
-	std::unique_ptr<sh::ShuforV> shufor_;
 	const sh::TSize SH_SEED = 0xdefedcbaUL;
 };
 

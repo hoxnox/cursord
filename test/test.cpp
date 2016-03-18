@@ -11,6 +11,7 @@
 #include "tipv4.hpp"
 #include "tUtils.hpp"
 #include "tMixedCartesianProduct.hpp"
+#include "tMath.hpp"
 
 int main(int argc, char *argv[])
 {

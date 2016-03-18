@@ -185,6 +185,7 @@ if(WITH_expand_ipv4rg)
 		./src/ipv4_generator.cpp
 		./src/speedometer.hpp
 		./src/speedometer.cpp
+		./src/Math.cpp
 		./misc/expand_ipv4rg.cpp)
 	add_executable(expand_ipv4rg ${EXPAND_IPv4RG_SRC})
 	target_link_libraries(expand_ipv4rg ${LIBRARIES})
@@ -237,6 +238,7 @@ if( WITH_TESTS )
 		./src/ipv4.hpp
 		./src/Utils.cpp
 		./src/MixedCartesianProduct.cpp
+		./src/Math.cpp
 		./test/test.cpp
 	)
 	if(BUILD_GTEST)

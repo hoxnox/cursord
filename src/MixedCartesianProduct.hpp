@@ -14,6 +14,27 @@
 
 namespace cursor {
 
+/**@brief Generates Cartesian product from given value ranges.
+ *
+ * There are several generating strategies
+ *
+ * (1, 2, 3, 4) (A, B)
+ *
+ * * MIX_NONE {1A,1B,2A,2B,3A,3B,4A,4B}
+ * * MIX_DIAGONAL (1A,2B,4A,1B,3A,4B,2A,3B)
+ * * MIX_SHUFFLE (values are shuffled, depend on seed)
+ *
+ * TODO: optimize if we have random access iterators.
+ *
+ * ## MIX_DIAGONAL 
+ *
+ * Suppose we have n1 elements in first set, n2 in second, ... nk in k.
+ * First thing we need to do - find the tuple (N1, ..., Nk) so that
+ * N1 >= n1, N2 >= n2, ... Nk >=nk and gcd(Ni,Nj)=1 for all
+ * i != j. After that we choose (a1, ..., ak) so a1 <= N1, ..., ak <= Nk
+ * and generating all elements of that cyclic additive group. We skip
+ * element for which exists aj so that aj >= nj.
+ * */
 template <class Iter>
 class MixedCartesianProduct
 {
@@ -21,7 +42,8 @@ public:
 	enum MixMode
 	{
 		MIX_NONE,
-		MIX_SHUFFLE
+		MIX_DIAGONAL,
+		MIX_SHUFFLE,
 	};
 	typedef uint64_t SizeT;
 	using ObjT=typename std::iterator_traits<Iter>::value_type;
@@ -32,8 +54,9 @@ public:
 	bool IsReady() const { return cnt_total_ != 0; };
 	std::string StrError() const { return err_.str(); };
 
-	std::vector<ObjT> operator*();
-	MixedCartesianProduct<Iter>& operator++() { ++(*state_); return *this; }
+	std::string Get(std::string delim = ";") const;
+	std::vector<ObjT> operator*() const;
+	MixedCartesianProduct<Iter>& operator++();
 	operator bool() const { return cnt_total_ != cnt_done_; }
 
 	/**@brief total elements in the CP*/
@@ -60,6 +83,8 @@ private:
 			: sizes_(sizes)
 			, state_(sizes.size(), 1)
 			, shufor_(nullptr)
+			, mix_seed_(mix_seed)
+			, is_cycle_(false)
 		{
 			if (mix_mode == MIX_SHUFFLE)
 			{
@@ -71,23 +96,16 @@ private:
 		State(const State&) = delete;
 		State& operator=(const State&) = delete;
 		State& operator++();
-		bool IsEnd() const
-		{
-			if (shufor_)
-				return shufor_->IsCycle();
-			for (auto i : state_)
-				if (i != 0)
-					return false;
-			return true; 
-		}
+		bool IsCycle() const { return is_cycle_; }
 		std::unique_ptr<shufor::ShuforV> shufor_;
 		std::vector<size_t> state_;
 		std::vector<size_t> sizes_;
+		const SizeT mix_seed_;
+		bool is_cycle_;
 	};
 	std::unique_ptr<State> state_;
 	void incCurrpos();
-	std::vector<std::vector<std::string> > data_;
-	const SizeT mix_seed_;
+	std::vector<std::vector<ObjT> > data_;
 	const MixMode mix_mode_;
 	size_t cnt_total_;
 	size_t cnt_done_;
@@ -100,7 +118,6 @@ MixedCartesianProduct<Iter>::MixedCartesianProduct(
 		MixMode mix_mode,
 		SizeT mix_seed)
 	: state_(nullptr)
-	, mix_seed_(mix_seed)
 	, mix_mode_(mix_mode)
 	, cnt_total_(0)
 	, cnt_done_(0)
@@ -108,7 +125,7 @@ MixedCartesianProduct<Iter>::MixedCartesianProduct(
 	std::vector<size_t> sizes;
 	for (auto input : inputs)
 	{
-		data_.emplace_back(std::vector<std::string>(input.first, input.second));
+		data_.emplace_back(input.first, input.second);
 		sizes.emplace_back(data_.back().size());
 		if (data_.back().size() > 0)
 			cnt_total_ = (cnt_total_ == 0 ? data_.back().size() : cnt_total_*data_.back().size());
@@ -130,16 +147,22 @@ MixedCartesianProduct<Iter>::State::operator++()
 			}
 			state_[i] = 1;
 		}
+		is_cycle_ = true;
 	}
 	else
 	{
+		if (shufor_->IsCycle())
+		{
+			shufor_.reset(new shufor::ShuforV(sizes_, mix_seed_));
+			is_cycle_ = true;
+		}
 		state_ = shufor_->GetNext();
 	}
 	return *this;
 }
 
 template<class Iter> std::vector<typename MixedCartesianProduct<Iter>::ObjT>
-MixedCartesianProduct<Iter>::operator*()
+MixedCartesianProduct<Iter>::operator*() const
 {
 	if (!state_)
 		return std::vector<typename MixedCartesianProduct<Iter>::ObjT>();
@@ -158,6 +181,29 @@ MixedCartesianProduct<Iter>::RestoreByVal(
 template<class Iter> void
 MixedCartesianProduct<Iter>::RestoreByCount(SizeT count)
 {
+}
+
+template<class Iter> inline MixedCartesianProduct<Iter>&
+MixedCartesianProduct<Iter>::operator++()
+{
+	++(*state_);
+	++cnt_done_;
+	return *this;
+}
+
+
+template<class Iter> inline std::string
+MixedCartesianProduct<Iter>::Get(std::string delim) const
+{
+	std::vector<ObjT> values = operator*();
+	std::string separator = "";
+	std::string result;
+	for (const auto& val : values)
+	{
+		result += separator + std::string(val.begin(), val.end());
+		separator = delim;
+	}
+	return result;
 }
 
 } //namespace
