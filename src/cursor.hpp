@@ -99,7 +99,7 @@ private:
 inline bool
 Cursor::isShared() const
 {
-	if (shared_total_ == 0 || shared_curr_ == 0 || shared_curr_ < shared_total_)
+	if (shared_total_ == 0 || shared_curr_ == 0 || shared_total_ < shared_curr_)
 		return false;
 	return true;
 }

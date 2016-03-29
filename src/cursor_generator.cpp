@@ -196,6 +196,14 @@ void CursorGenerator::init(const Cursor::Args args)
 		{
 			name_ = tmp.toLower();
 		}
+		else if(arg->first == "suffix")
+		{
+			suffix_ = arg->second;
+		}
+		else if(arg->first == "prefix")
+		{
+			prefix_ = arg->second;
+		}
 		else
 		{
 			LOG(WARNING) << ("Unsupported argument.") << " "
@@ -268,7 +276,7 @@ int CursorGenerator::do_next(const size_t count, std::deque<nx::String>& buf)
 			          repeat_);
 			if(nextbufsz_ == 0)
 				break;
-			buf.push_back(nx::String(nextbuf_, nextbuf_ + nextbufsz_));
+			buf.push_back(prefix_ + nx::String(nextbuf_, nextbuf_ + nextbufsz_) + suffix_);
 		}
 		else
 		{

@@ -203,7 +203,7 @@ void Cursor::Run(const Config&& cfg)
 int Cursor::Next(const size_t count, std::deque<nx::String>& buf)
 {
 	int rs = 0;
-	if (shared_total_ != 0 && shared_curr_ != 0 && shared_curr_ < shared_total_)
+	if (isShared())
 	{
 		if (extra_state_ && extra_state_->IsReady())
 		{  // +extra with mixing

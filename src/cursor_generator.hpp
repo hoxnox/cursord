@@ -30,6 +30,8 @@ class CursorGenerator: public Cursor
 		char*      nextbuf_;
 		size_t     nextbufsz_;
 		size_t     nextbufmaxsz_;
+		nx::String suffix_;
+		nx::String prefix_;
 		char*      state_;
 		size_t     statesz_;
 		size_t     statemaxsz_;
