@@ -1,6 +1,6 @@
-/**@author $username$ <$usermail$>
- * @date $date$
- * @copyright $username$*/
+/**@author hoxnox <hoxnox@gmail.com>
+ * @date 20160314 09:11:14
+ * @copyright hoxnox*/
 
 #ifndef __NX_CURSOR_GENERATOR_HPP__
 #define __NX_CURSOR_GENERATOR_HPP__
@@ -16,8 +16,6 @@ namespace cursor {
 class CursorGenerator: public Cursor
 {
 	public:
-		CursorGenerator(const Cursor::Args args,
-		           const size_t shared_curr, const size_t shared_total);
 		CursorGenerator(const Cursor::Args args);
 		~CursorGenerator();
 	protected:
@@ -32,6 +30,8 @@ class CursorGenerator: public Cursor
 		char*      nextbuf_;
 		size_t     nextbufsz_;
 		size_t     nextbufmaxsz_;
+		nx::String suffix_;
+		nx::String prefix_;
 		char*      state_;
 		size_t     statesz_;
 		size_t     statemaxsz_;

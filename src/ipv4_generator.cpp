@@ -25,6 +25,7 @@ IPv4Generator::IPv4Generator(const bool repeat,
 	, prime_number_(997)
 	, initial_(0)
 	, skip_private_(true)
+	, shuffle_(NULL)
 {
 }
 
@@ -109,6 +110,7 @@ IPv4Generator::init(const char * init, const size_t initsz,
 	if(i_faddr >= i_addr)
 	{
 		size_ = i_faddr - i_addr;
+		shuffle_.reset(new Shufor(size_, 0xabcdefed));
 		if (shuffle_restore_val > 0)
 		{
 			if (shuffle_restore_val - initial_ > size_)
@@ -117,12 +119,8 @@ IPv4Generator::init(const char * init, const size_t initsz,
 				return 0;
 			}
 			addr->sin_addr.s_addr = htonl(shuffle_restore_val);
-			shuffle_.RestoreVal(size_, shuffle_restore_val - initial_);
+			shuffle_->RestoreVal(0xabcdefed, size_, shuffle_restore_val - initial_);
 			shift_to_next_host(addr, faddr);
-		}
-		else
-		{
-			shuffle_.Init(size_);
 		}
 	}
 	else
@@ -150,9 +148,9 @@ int IPv4Generator::next(uint32_t &curr, const uint32_t final)
 	++counter_;
 	if(mix_)
 	{
-		if(shuffle_.IsCycle() && !repeat_)
+		if(shuffle_->IsCycle() && !repeat_)
 			return -1;
-		curr = htonl(initial_ + shuffle_.GetNext());
+		curr = htonl(initial_ + shuffle_->GetNext());
 	}
 	else
 	{

@@ -1,6 +1,6 @@
-/**@author $username$ <$usermail$>
- * @date $date$
- * @copyright $username$*/
+/**@author hoxnox <hoxnox@gmail.com>
+ * @date 20160314 09:11:14
+ * @copyright hoxnox*/
 
 #include "cursor_file.hpp"
 #include <endians.hpp>
@@ -41,7 +41,6 @@ size_t getFileSz(std::ifstream& file, CursorFile::FileTypes type)
 	file.seekg(0, std::ios::beg);
 	if (type == CursorFile::FTYPE_IPv4 || type == CursorFile::FTYPE_IPv4RANGES)
 	{
-		size_t cnt = 0;
 		file.seekg (0, file.end);
 		size_t filesz = file.tellg();
 		file.seekg(0, std::ios::beg);
@@ -123,20 +122,6 @@ CursorFile::CursorFile(const Cursor::Args args)
 	init(args);
 }
 
-CursorFile::CursorFile(const Cursor::Args args,
-                       const size_t shared_curr, const size_t shared_total)
-	: Cursor(shared_curr, shared_total)
-	, repeat_(false)
-	, ftype_(FTYPE_TEXT)
-	, ipv4gen_(false)
-	, statesz_(0)
-	, initialized_(false)
-	, totalsz_(0)
-	, passedsz_(0)
-{
-	init(args);
-}
-
 void CursorFile::init(const Cursor::Args args)
 {
 	size_t init = 0;
@@ -202,6 +187,7 @@ void CursorFile::init(const Cursor::Args args)
 	{
 		LOG(ERROR) << _("Error opening file.") << " "
 			<<_("Filename") << ": " << fname_.toUTF8();
+		totalsz_ = 0;
 		return;
 	}
 	totalsz_ = getFileSz(file_, ftype_);
@@ -231,6 +217,7 @@ CursorFile::~CursorFile()
 bool
 CursorFile::init_ipv4gen(uint32_t ip_low, uint32_t ip_hi)
 {
+	LOG(INFO) << *(nx::u32be*)&ip_low << " -- " << *(nx::u32be*)&ip_hi;
 	struct sockaddr_in addr1, addr2;
 	size_t suffpos = 0;
 	memset(&addr1, 0, sizeof(addr1));
@@ -425,6 +412,8 @@ std::string CursorFile::getnext()
 
 int CursorFile::do_next(const size_t count, std::deque<nx::String>& buf /*= buf_*/)
 {
+	if (totalsz_ == 0)
+		return -1;
 	for(size_t i = 0; i < count; ++i)
 	{
 		std::string line;

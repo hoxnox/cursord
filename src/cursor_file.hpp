@@ -1,6 +1,6 @@
-/**@author $username$ <$usermail$>
- * @date $date$
- * @copyright $username$*/
+/**@author hoxnox <hoxnox@gmail.com>
+ * @date 20160314 09:11:14
+ * @copyright hoxnox*/
 
 #ifndef __NX_CURSOR_FILE_HPP__
 #define __NX_CURSOR_FILE_HPP__
@@ -21,8 +21,6 @@ class CursorFile : public Cursor
 			FTYPE_IPv4RANGES = 1 << 2,
 			FTYPE_CIDR       = 1 << 3
 		};
-		CursorFile(const Cursor::Args args,
-		           const size_t shared_curr, const size_t shared_total);
 		CursorFile(const Cursor::Args args);
 		~CursorFile();
 	protected:

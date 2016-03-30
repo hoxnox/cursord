@@ -1,6 +1,6 @@
-/**@author $username$ <$usermail$>
- * @date $date$
- * @copyright $username$*/
+/**@author hoxnox <hoxnox@gmail.com>
+ * @date 20160314 09:11:14
+ * @copyright hoxnox*/
 
 #include "cursor_generator.hpp"
 #include "ipv4_generator.hpp"
@@ -196,6 +196,14 @@ void CursorGenerator::init(const Cursor::Args args)
 		{
 			name_ = tmp.toLower();
 		}
+		else if(arg->first == "suffix")
+		{
+			suffix_ = arg->second;
+		}
+		else if(arg->first == "prefix")
+		{
+			prefix_ = arg->second;
+		}
 		else
 		{
 			LOG(WARNING) << ("Unsupported argument.") << " "
@@ -222,7 +230,7 @@ void CursorGenerator::init(const Cursor::Args args)
 		if(priv)
 			gipv4.SetSkipPrivate(false);
 		statesz_ = gipv4.init(state_, statesz_, state_, statemaxsz_, restore);
-		if (shared_ && restore != 0)
+		if (isShared() && restore != 0)
 			do_next_fake_count_ = shared_curr_ - 1;
 		generator = gipv4;
 	}
@@ -235,21 +243,6 @@ void CursorGenerator::init(const Cursor::Args args)
 
 CursorGenerator::CursorGenerator(const Cursor::Args args)
 	: Cursor()
-	, do_next_fake_count_(0)
-	, nextbufsz_(0)
-	, nextbufmaxsz_(2048)
-	, statesz_(0)
-	, statemaxsz_(2048)
-	, generator(NULL)
-	, repeat_(0)
-{
-	init(args);
-}
-
-
-CursorGenerator::CursorGenerator(const Cursor::Args args,
-                                 const size_t shared_curr, const size_t shared_total)
-	: Cursor(shared_curr, shared_total)
 	, do_next_fake_count_(0)
 	, nextbufsz_(0)
 	, nextbufmaxsz_(2048)
@@ -283,7 +276,7 @@ int CursorGenerator::do_next(const size_t count, std::deque<nx::String>& buf)
 			          repeat_);
 			if(nextbufsz_ == 0)
 				break;
-			buf.push_back(nx::String(nextbuf_, nextbuf_ + nextbufsz_));
+			buf.push_back(prefix_ + nx::String(nextbuf_, nextbuf_ + nextbufsz_) + suffix_);
 		}
 		else
 		{

@@ -25,8 +25,8 @@ include("${PROJECT_SOURCE_DIR}/cmake/ext/nx_utils.cmake")
 nx_configure()
 
 set(CURSORD_VERSION_MAJOR 3)
-set(CURSORD_VERSION_MINOR 0)
-set(CURSORD_VERSION_PATCH 1)
+set(CURSORD_VERSION_MINOR 2)
+set(CURSORD_VERSION_PATCH 0)
 # configuration header
 configure_file(
 	"${PROJECT_SOURCE_DIR}/src/cursord.cfg"
@@ -38,6 +38,7 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/src/facet")
 find_package(Threads REQUIRED)
 list(APPEND LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+add_definitions("-std=c++11")
 
 ###########################################################################
 # tclap
@@ -51,14 +52,12 @@ include_directories(${TCLAP_INCLUDE_DIR})
 if (WITH_SYSTEM_NANOMSG)
 	# TODO: FindNANOMGS.cmake
 	set(NANOMSG_USE_STATIC_LIBS true)
-	find_package(NANOMSG REQUIRED)
+	find_package(Nanomsg REQUIRED)
 else()
 	include(ExternalProject)
 	set(NANOMSG_ROOT "${CMAKE_CURRENT_BINARY_DIR}/nanomsg")
 	ExternalProject_Add(nanomsg
-		URL "https://github.com/nanomsg/nanomsg/archive/0.5-beta.tar.gz"
-		URL_MD5 "918c76cbf2498d5b2947e45207f36fab"
-		PATCH_COMMAND <SOURCE_DIR>/autogen.sh
+		URL "file://${PROJECT_SOURCE_DIR}/third-party/nanomsg-0.6-beta.tar.gz"
 		CONFIGURE_COMMAND ./configure --enable-static --disable-shared --prefix <INSTALL_DIR>
 		INSTALL_DIR "${NANOMSG_ROOT}"
 		BUILD_IN_SOURCE 1
@@ -69,6 +68,24 @@ else()
 endif()
 include_directories(${NANOMSG_INCLUDE_DIR})
 list(APPEND LIBRARIES -lanl -lrt ${NANOMSG_LIBRARIES})
+
+########################################################################
+# shufor
+
+include(ExternalProject)
+set(SHUFOR_ROOT "${CMAKE_CURRENT_BINARY_DIR}/shufor")
+ExternalProject_Add(shufor
+	URL "file://${PROJECT_SOURCE_DIR}/third-party/shufor-0.0.1.tar.gz"
+	URL_MD5 "ea272cbfcdaefc4c5a97469061ecf1d1" 
+	CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+	INSTALL_DIR "${SHUFOR_ROOT}"
+	BUILD_IN_SOURCE 1
+)
+set(SHUFOR_INCLUDE_DIR ${SHUFOR_ROOT}/include)
+set(SHUFOR_LIBRARIES ${SHUFOR_ROOT}/lib/libshufor.a)
+list(APPEND EXTERNAL_DEPS shufor)
+include_directories(${SHUFOR_INCLUDE_DIR})
+list(APPEND LIBRARIES ${SHUFOR_LIBRARIES})
 
 ##########################################################################
 # glog
@@ -119,8 +136,10 @@ set(SRC ./src/cursord.cpp
 	./src/cursor_file.cpp
 	./src/ipv4.hpp
 	./src/ipv4.cpp
-	./src/shuffle.hpp
-	./src/shuffle.cpp
+	./src/Utils.hpp
+	./src/Utils.cpp
+	./src/MixedCartesianProduct.cpp
+	./src/MixedCartesianProduct.hpp
 	./src/speedometer.hpp
 	./src/speedometer.cpp)
 if(NOT WITHOUT_ODBC)
@@ -159,16 +178,30 @@ if(WITH_expand_ipv4rg)
 		./src/cursor_file.cpp
 		./src/ipv4.hpp
 		./src/ipv4.cpp
+		./src/Utils.hpp
+		./src/Utils.cpp
+		./src/MixedCartesianProduct.cpp
+		./src/MixedCartesianProduct.hpp
 		./src/ipv4_generator.hpp
 		./src/ipv4_generator.cpp
-		./src/shuffle.hpp
-		./src/shuffle.cpp
 		./src/speedometer.hpp
 		./src/speedometer.cpp
+		./src/Math.cpp
 		./misc/expand_ipv4rg.cpp)
 	add_executable(expand_ipv4rg ${EXPAND_IPv4RG_SRC})
 	target_link_libraries(expand_ipv4rg ${LIBRARIES})
 endif()
+
+###########################################################################
+# nx_socket
+
+set(NX_SOCKET_SRC
+	./src/nx_socket.h
+	./src/nx_socket.c
+)
+add_library(nx_socket STATIC ${NX_SOCKET_SRC})
+list(APPEND LIBRARIES nx_socket)
+
 
 ###########################################################################
 # ipv4gen
@@ -176,7 +209,7 @@ endif()
 if(NOT WITHOUT_IPV4GEN)
 	set(IPV4GEN_SRC ./misc/ipv4gen.c)
 	add_executable(ipv4gen ${IPV4GEN_SRC})
-	target_link_libraries(ipv4gen)
+	target_link_libraries(ipv4gen nx_socket)
 endif()
 
 ###########################################################################
@@ -185,9 +218,7 @@ endif()
 if(NOT WITHOUT_IPV4GEN)
 	set(IPV4GEN_M_SRC ./misc/ipv4gen_m.cpp 
 	                  ./src/ipv4_generator.cpp 
-	                  ./src/ipv4_generator.hpp
-	                  ./src/shuffle.hpp
-	                  ./src/shuffle.cpp)
+	                  ./src/ipv4_generator.hpp)
 	add_executable(ipv4gen_m ${IPV4GEN_M_SRC})
 	target_link_libraries(ipv4gen_m ${LIBRARIES})
 endif()
@@ -204,11 +235,11 @@ endif()
 
 if( WITH_TESTS )
 	set(SOURCES_TEST
-		./test/tshuffle.hpp
-		./src/shuffle.hpp
-		./src/shuffle.cpp
 		./src/ipv4.cpp
 		./src/ipv4.hpp
+		./src/Utils.cpp
+		./src/MixedCartesianProduct.cpp
+		./src/Math.cpp
 		./test/test.cpp
 	)
 	if(BUILD_GTEST)
@@ -233,7 +264,7 @@ if( WITH_TESTS )
 		nx_GTEST_ADD_TESTS("${TEST}" ${SOURCES_TEST})
 	endif(BUILD_GTEST)
 	set_target_properties("${TEST}" PROPERTIES
-		COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++0x")
+		COMPILE_FLAGS "${COMPILE_FLAGS} -std=c++14")
 else( WITH_TESTS )
 	message(STATUS "Tests disabled. Use -DBUILD_TESTS=TRUE to enable it.")
 endif( WITH_TESTS )
