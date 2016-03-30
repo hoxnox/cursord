@@ -77,7 +77,7 @@ private:
 	class State
 	{
 	public:
-		State(const std::vector<size_t>& sizes,
+		State(const std::vector<SizeT>& sizes,
 		      MixMode mix_mode = MIX_NONE,
 		      SizeT mix_seed = 0x98765)
 			: sizes_(sizes)
@@ -98,8 +98,8 @@ private:
 		State& operator++();
 		bool IsCycle() const { return is_cycle_; }
 		std::unique_ptr<shufor::ShuforV> shufor_;
-		std::vector<size_t> state_;
-		std::vector<size_t> sizes_;
+		std::vector<SizeT> state_;
+		std::vector<SizeT> sizes_;
 		const SizeT mix_seed_;
 		bool is_cycle_;
 	};
@@ -122,7 +122,7 @@ MixedCartesianProduct<Iter>::MixedCartesianProduct(
 	, cnt_total_(0)
 	, cnt_done_(0)
 {
-	std::vector<size_t> sizes;
+	std::vector<SizeT> sizes;
 	for (auto input : inputs)
 	{
 		data_.emplace_back(input.first, input.second);
