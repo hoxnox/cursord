@@ -25,7 +25,7 @@ include("${PROJECT_SOURCE_DIR}/cmake/ext/nx_utils.cmake")
 nx_configure()
 
 set(CURSORD_VERSION_MAJOR 3)
-set(CURSORD_VERSION_MINOR 1)
+set(CURSORD_VERSION_MINOR 2)
 set(CURSORD_VERSION_PATCH 0)
 # configuration header
 configure_file(
@@ -38,7 +38,7 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/src/facet")
 find_package(Threads REQUIRED)
 list(APPEND LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-add_definitions("-std=c++14")
+add_definitions("-std=c++11")
 
 ###########################################################################
 # tclap
@@ -52,7 +52,7 @@ include_directories(${TCLAP_INCLUDE_DIR})
 if (WITH_SYSTEM_NANOMSG)
 	# TODO: FindNANOMGS.cmake
 	set(NANOMSG_USE_STATIC_LIBS true)
-	find_package(NANOMSG REQUIRED)
+	find_package(Nanomsg REQUIRED)
 else()
 	include(ExternalProject)
 	set(NANOMSG_ROOT "${CMAKE_CURRENT_BINARY_DIR}/nanomsg")
@@ -72,10 +72,11 @@ list(APPEND LIBRARIES -lanl -lrt ${NANOMSG_LIBRARIES})
 ########################################################################
 # shufor
 
+include(ExternalProject)
 set(SHUFOR_ROOT "${CMAKE_CURRENT_BINARY_DIR}/shufor")
 ExternalProject_Add(shufor
 	URL "file://${PROJECT_SOURCE_DIR}/third-party/shufor-0.0.1.tar.gz"
-	URL_MD5 "243a9a38efaa267aa647c0b068462e2a" 
+	URL_MD5 "ea272cbfcdaefc4c5a97469061ecf1d1" 
 	CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 	INSTALL_DIR "${SHUFOR_ROOT}"
 	BUILD_IN_SOURCE 1
